@@ -1,0 +1,25 @@
+body {
+  background: #f6f6f6;
+  margin: 0;
+}
+
+#frame {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.view {
+  background: #fff;
+  border: 1px solid #ddd;
+  flex: 1;
+  margin: 0.3em;
+}
+
+#source {
+  font-family: monospace;
+}
+
+.--app-err {
+  color: #900;
+}
