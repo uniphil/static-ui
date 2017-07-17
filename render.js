@@ -27,7 +27,7 @@ function _blah(namedNodes, context, node) {
 
 
 function renderNamed(namedNodes, context, name) {
-  let output = [];  
+  let output = [];
   namedNodes[name].children.forEach(child =>
     _blah(namedNodes, context, child).forEach(childEl =>
       output.push(childEl)));
