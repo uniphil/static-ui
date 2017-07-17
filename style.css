@@ -10,14 +10,28 @@ body {
 }
 
 .view {
-  background: #fff;
-  border: 1px solid #ddd;
-  flex: 1;
-  margin: 0.3em;
+  flex: 1 1;
 }
 
 #source {
+  background: transparent;
+  border: none;
+  box-sizing: border-box;
   font-family: monospace;
+  outline: none;
+  padding: 0.5em;
+  padding-right: 0;
+  resize: none;
+  white-space: nowrap;
+}
+
+#preview {
+  background: #fff;
+  box-shadow: 0 0 5px #999;
+  overflow: auto;
+  margin: 0.5em;
+  margin-left: 0;
+  flex: 1.618;
 }
 
 .--app-err {
