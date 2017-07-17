@@ -33,7 +33,7 @@ function run(code) {
     }
   });
 
-  const code = localStorage.getItem('code') || '';
+  const code = localStorage.getItem('code') || '▲ App\n  ↳ Header\n  ↳ section\n    ↳ p\n      ↳ ("sup")\n\n▲ Header\n  ↳ h1\n    ↳ ("Hello world!")\n';
   input.value = code;
   run(code);
 })();
