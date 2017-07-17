@@ -54,6 +54,7 @@ const children = indented(many0(decorated(use => [
           normalNode,
           switchNode
         })),
+        opt(newline),
 ])));
 
 
