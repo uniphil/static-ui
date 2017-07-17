@@ -13,7 +13,7 @@ function run(code) {
 
 (function init() {
   window.addEventListener('error', e => {
-    const errStr = `<pre class="--app-err">${e.error.stack}</pre>`;
+    const errStr = `<pre class="--app-err">${e.error.message}\n${e.error.stack}</pre>`;
     preview.innerHTML = errStr;
   });
 
