@@ -20,18 +20,28 @@ function run(code) {
 
   let queued = false;
   function update() {
-    queued = false;
-    const code = input.value;
-    localStorage.setItem('code', code);
-    run(code);
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      const code = input.value;
+      localStorage.setItem('code', code);
+      run(code);
+    });
   }
 
-  input.addEventListener('input', e => {
-    if (!queued) {
-      queued = true;
-      requestAnimationFrame(update);
+  input.addEventListener('keydown', e => {
+    if (e.keyCode === 9) {
+      e.preventDefault();
+      const before = input.value.slice(0, input.selectionStart);
+      const after = input.value.slice(input.selectionEnd);
+      input.value = `${before}  ${after}`;
+      input.selectionEnd = before.length + 2;
+      update();
     }
   });
+
+  input.addEventListener('input', update);
 
   const code = localStorage.getItem('code') || '▲ App\n  ↳ Header\n  ↳ section\n    ↳ p\n      ↳ ("sup")\n\n▲ Header\n  ↳ h1\n    ↳ ("Hello world!")\n';
   input.value = code;
