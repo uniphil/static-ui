@@ -6,7 +6,6 @@ const re = exp => t => {
 
 
 const newline = re(/\n/);
-const blanks = re(/\s+/);
 
 
 const alt = parsers => t => {
@@ -81,3 +80,26 @@ const tag = s => t =>
   t.startsWith(s)
     ? { parsed: s, remaining: t.slice(s.length) }
     : { error: `tag "${s}" didn't match: "${t}"` };
+
+
+// sooooper hack
+const indented = parser => t => {
+  let block = '';
+  let remaining = '';
+  let inBlock = true;
+  for (line of t.split('\n')) {
+    if (inBlock && line.startsWith('  ')) {
+      block += `${line.slice(2)}\n`;
+    } else {
+      inBlock = false;
+      remaining += `${line}\n`;
+    }
+  }
+  const result = parser(block);
+  if (result.error) {
+    return { error: result.error };
+  } else if (result.remaining.trim()) {
+    return { error: `extra content in indented block: ${result.remaining}` };
+  }
+  return { parsed: result.parsed, remaining };
+};

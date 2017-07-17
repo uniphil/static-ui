@@ -35,14 +35,9 @@ const literal = decorated(use => [
 ]);
 
 
-function children() {
-  return _children.apply(null, arguments);
-}
-
-
 const normalNode = seq(k => [
   k('name',     identifier),
-                blanks,
+                newline,
   k('captures', opt(captures)),
   k('exposes',  opt(exposes)),
   k('children', children),
@@ -52,26 +47,24 @@ const normalNode = seq(k => [
 const switchNode = tag('switch');  // TODO
 
 
-const _children = many0(decorated(use => [
-        tag('↳'),
-        blanks,
+const children = indented(many0(decorated(use => [
+        tag('↳ '),
     use(alt({
           literal,
           normalNode,
           switchNode
         })),
-]));
+])));
 
 
 const namedNode = seq(k => [
   k('name',     declaration),
-                opt(blanks),
   k('children', children),
                 newline,
 ]);
 
 
 const parse = many0(alt({
-  blanks,
+  blanks: newline,
   namedNode,
 }));
