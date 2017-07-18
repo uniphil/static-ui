@@ -43,7 +43,7 @@ function run(code) {
 
   input.addEventListener('input', update);
 
-  const code = localStorage.getItem('code') || '▲ App\n  ↳ Header\n  ↳ section\n    ↳ p\n      ↳ ("sup")\n\n▲ Header\n  ↳ h1\n    ↳ ("Hello world!")\n';
+  const code = localStorage.getItem('code') || '▲ App\n  ↳ Header\n  ↳ Content\n\n▲ Header\n  ↳ h1\n    ↳ ("Hello world!")\n\n▲ Content\n  ↳ section\n    ↳ p\n      ↳ ("This is some content. Here\'s a ")\n      ↳ a\n          < href←("https://en.wikipedia.org")\n        ↳ ("link")\n      ↳ (".")\n';
   input.value = code;
   run(code);
 })();

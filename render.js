@@ -1,6 +1,20 @@
 const builtins = (names => {
-  const makeNode = name => () =>
-    document.createElement(name);
+  const makeNode = name => captures => {
+    const el = document.createElement(name);
+    if (!captures.empty) {
+      const k = captures.parsed.name;
+      if (captures.parsed.value.empty) {
+        throw new Error('Reading from context not yet supported. ' +
+                        'Provide a literal.');
+      }
+      if (captures.parsed.value.parsed.name !== 'string') {
+        throw new Error("non-string captures not yet supported");
+      }
+      const v = captures.parsed.value.parsed.parsed;
+      el.setAttribute(k, v);
+    }
+    return el;
+  };
 
   return names.reduce((nodes, name) => {
     nodes[name] = makeNode(name);
@@ -12,7 +26,7 @@ const builtins = (names => {
 function _blah(namedNodes, context, node) {
   let output = [];
   if (node.name === 'normalNode') {
-    output = output.concat(_render(namedNodes, context, node.parsed.name, node.parsed.children));
+    output = output.concat(_render(namedNodes, node.parsed.captures, node.parsed.name, node.parsed.children));
   } else if (node.name === 'literal') {
     const value = node.parsed;
     output.push(document.createTextNode({
@@ -38,7 +52,7 @@ function renderNamed(namedNodes, context, name) {
 function _render(namedNodes, context, name, children) {
   let output = [];
   if (name in builtins) {
-    const el = builtins[name]();
+    const el = builtins[name](context);
     children.forEach(child =>
       _blah(namedNodes, context, child).forEach(childEl =>
         el.appendChild(childEl)));

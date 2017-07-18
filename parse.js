@@ -8,7 +8,15 @@ const declaration = decorated(use => [
 ]);
 
 
-const captures = tag('<');
+const captures = seq(k => [
+              tag('    < '),
+  k('name',   identifier),
+  k('value',  opt(decorated(use => [
+                    tag('←'),
+                use(literal),
+              ]))),
+              newline,
+]);
 
 
 const exposes = tag('>');
