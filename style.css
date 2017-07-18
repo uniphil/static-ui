@@ -22,7 +22,7 @@ body {
   padding: 0.5em;
   padding-right: 0;
   resize: none;
-  white-space: nowrap;
+  white-space: pre;
 }
 
 #preview {
