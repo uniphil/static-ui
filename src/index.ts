@@ -1,57 +1,11 @@
-class Group {
-    readonly name: string;
-    readonly children: Array<UiNode>;
-
-    constructor(name: string, ...children: Array<UiNode>) {
-        this.name = name,
-        this.children = children;
-    }
-}
-
-type UiNode = GroupNode | DomNode | Value;
-
-class GroupNode {
-    readonly type = "group";
-    readonly requires = null;
-    readonly provides = null;
-    readonly children: Array<UiNode>;
-    readonly name: string;
-
-    constructor(name: string, ...children: Array<UiNode>) {
-        this.name = name;
-        this.children = children;
-    }
-}
-
-class DomNode {
-    readonly type = "dom";
-    readonly requires = null;
-    readonly provides = null;
-    readonly children: Array<UiNode>;
-    readonly name: string;
-
-    constructor(name: string, ...children: Array<UiNode>) {
-        this.name = name;
-        this.children = children;
-    }
-}
-
-class Value {
-    readonly type = 'value';
-    readonly value: Literal;
-
-    constructor(value: string | number | boolean) {
-        this.value = new Literal(value);
-    }
-}
-
-class Literal {
-    readonly value: string | number | boolean;
-
-    constructor(value: string | number | boolean) {
-        this.value = value;
-    }
-}
+import {
+  Group,
+  UiNode,
+  GroupNode,
+  DomNode,
+  Value,
+  Literal,
+} from './ast';
 
 
 type GroupMap = {App: Group, [key: string]: Group};

@@ -1,0 +1,39 @@
+body {
+  background: #eee;
+  margin: 0;
+}
+
+#frame {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.view {
+  flex: 1 1;
+}
+
+#source {
+  background: transparent;
+  border: none;
+  box-sizing: border-box;
+  font-family: monospace;
+  outline: none;
+  padding: 0.5em;
+  padding-right: 0;
+  resize: none;
+  white-space: pre;
+}
+
+#preview {
+  background: #fff;
+  box-shadow: 0 0 1px #999;
+  overflow: auto;
+  margin: 0.5em;
+  margin-left: 0;
+  flex: 1.618;
+}
+
+.--app-err {
+  color: #900;
+}
