@@ -1,13 +1,11 @@
 import {
-  Group,
-  UiNode,
-  GroupNode,
   DomNode,
+  Group,
+  GroupMap,
+  GroupNode,
   Literal,
+  UiNode,
 } from './ast';
-
-
-export type GroupMap = {App: Group, [key: string]: Group};
 
 
 type Context = { children: Array<UiNode> };

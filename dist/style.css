@@ -1,6 +1,12 @@
 body {
-  background: #eee;
+  background: #e6e6e6;
   margin: 0;
+}
+
+:root {
+  --group-colour: tomato;
+  --dom-colour: dodgerblue;
+  --literal-colour: palevioletred;
 }
 
 #frame {
@@ -14,15 +20,7 @@ body {
 }
 
 #source {
-  background: transparent;
-  border: none;
-  box-sizing: border-box;
   font-family: monospace;
-  outline: none;
-  padding: 0.5em;
-  padding-right: 0;
-  resize: none;
-  white-space: pre;
 }
 
 #preview {
@@ -30,10 +28,98 @@ body {
   box-shadow: 0 0 1px #999;
   overflow: auto;
   margin: 0.5em;
-  margin-left: 0;
-  flex: 1.618;
+  margin-left: 0.25em;
 }
 
 .--app-err {
   color: #900;
+}
+
+#source h3,
+#source h4,
+#source p {
+  font: inherit;
+  margin: 0;
+}
+#source > .group {
+  background: #f4f4f4;
+  box-shadow: 0 0 1px #999;
+  box-sizing: border-box;
+  margin: 0.5em;
+  margin-right: 0.25em;
+  padding: 0.5em;
+}
+#source > .group > .name {
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 0.4em;
+}
+#source > .group > .name:before {
+  color: var(--group-colour);
+  content: "▲ ";
+}
+#source .children {
+  margin-left: 2ch;
+}
+#source .child {
+  display: flex;
+  margin-bottom: 0.4em;
+}
+#source .child:before {
+  display: block;
+  content: "↳";
+  opacity: 0.5;
+  margin-right: 1ch;
+}
+#source .child > .name {
+  color: #666;
+}
+#source .child > .name:before,
+#source .child > .name:after {
+  opacity: 0.5;
+}
+
+#source .child.dom:before {
+  color: var(--dom-colour);
+}
+#source .child.dom > .name:before {
+  color: var(--dom-colour);
+  content: "<";
+}
+#source .child.dom > .name:after {
+  color: var(--dom-colour);
+  content: ">";
+}
+
+#source .child.dom > .children {
+  margin-left: 0;
+}
+#source .child.dom > .children > .child.dom:before {
+  content: "";
+  margin-right: 0;
+}
+
+#source .child.group:before {
+  color: var(--group-colour);
+  content: "▷";
+  opacity: 1;
+}
+
+#source .child.value:before {
+  color: var(--literal-colour);
+  content: "(";
+  margin-right: 0;
+}
+#source .child.value:after {
+  color: var(--literal-colour);
+  content: ")";
+}
+#source .literal.string {
+  background: #fff;
+  border-bottom: 1px dotted var(--literal-colour);
+}
+#source .literal.string:before,
+#source .literal.string:after {
+  color: var(--literal-colour);
+  content: "\"";
 }

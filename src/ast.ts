@@ -52,3 +52,5 @@ export class Literal {
         this.value = value;
     }
 }
+
+export type GroupMap = {App: Group, [key: string]: Group};
