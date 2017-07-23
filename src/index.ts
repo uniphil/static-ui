@@ -5,51 +5,65 @@ import {
   GroupNode,
   Value,
 } from './ast';
+import edit, {
+    Edit,
+    OnEdit,
+} from './edit';
 import render from './render';
-import edit from './edit';
+import transform from './transform';
 
 
 let groups: GroupMap = {
-    App: new Group('App',
+    App: Group.e('App',
         new GroupNode('Header'),
         new DomNode('div',
             new DomNode('p',
-                new Value('hello here is some '),
+                Value.e('hello here is some '),
                 new DomNode('em',
-                    new Value('cool formatted')),
-                new Value(' content')),
+                    Value.e('cool formatted')),
+                Value.e(' content')),
             new DomNode('p',
-                new Value('That is all, '),
+                Value.e('That is all, '),
                 new DomNode('a',
-                    new Value('thanks')),
-                new Value('!')),
+                    Value.e('thanks')),
+                Value.e('!')),
         ),
         new GroupNode('Footer'),
     ),
-    Header: new Group('Header',
+    Header: Group.e('Header',
         new DomNode('div',
-            new DomNode('h1', new Value('Hello world!')),
-            new DomNode('h2', new Value('Welcome to this demo.')),
+            new DomNode('h1', Value.e('Hello world!')),
+            new DomNode('h2', Value.e('Welcome to this demo.')),
         ),
     ),
-    Footer: new Group('Footer',
+    Footer: Group.e('Footer',
         new DomNode('footer',
-            new DomNode('p', new Value('Good bye!'))
+            new DomNode('p', Value.e('Good bye!'))
         ),
     ),
 };
 
-console.log('groups', groups);
+function update(groups: GroupMap) {
+    const preview = document.getElementById('preview');
+    if (!preview) { throw new Error('no preview'); }
+    preview.innerHTML = '';
+
+    console.log('groups', groups);
+
+    render(groups).forEach((el: HTMLElement) => preview.appendChild(el));
+}
+
 
 const editor = document.getElementById('source');
 if (!editor) { throw new Error('no editor'); }
 editor.innerHTML = '';
 
-edit(groups).forEach((el: HTMLElement) => editor.appendChild(el));
+function blah(edit: Edit) {
+    groups = transform(groups, edit);
+    update(groups);
+}
 
+edit(groups, blah).forEach((el: HTMLElement) => editor.appendChild(el));
 
-const preview = document.getElementById('preview');
-if (!preview) { throw new Error('no preview'); }
-preview.innerHTML = '';
+update(groups);
 
-render(groups).forEach((el: HTMLElement) => preview.appendChild(el));

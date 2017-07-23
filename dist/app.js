@@ -14,15 +14,22 @@ define("ast", ["require", "exports"], function (require, exports) {
         return function (pre) { return pre + "-" + next++; };
     })();
     var Group = (function () {
-        function Group(name) {
+        function Group(name, children, newId) {
+            if (newId === void 0) { newId = id('group-definition'); }
+            this.id = newId;
+            this.name = name;
+            this.children = children;
+        }
+        Group.e = function (name) {
             var children = [];
             for (var _i = 1; _i < arguments.length; _i++) {
                 children[_i - 1] = arguments[_i];
             }
-            this.id = id('group-definition');
-            this.name = name;
-            this.children = children;
-        }
+            return new Group(name, children);
+        };
+        Group.prototype.replaceChildren = function (newChildren) {
+            return new Group(this.name, newChildren, this.id);
+        };
         return Group;
     }());
     exports.Group = Group;
@@ -59,11 +66,18 @@ define("ast", ["require", "exports"], function (require, exports) {
     }());
     exports.DomNode = DomNode;
     var Value = (function () {
-        function Value(value) {
+        function Value(value, newId) {
+            if (newId === void 0) { newId = id('value'); }
             this.type = 'value';
-            this.id = id('value');
+            this.id = newId;
             this.value = new Literal(value);
         }
+        Value.e = function (value) {
+            return new Value(value);
+        };
+        Value.prototype.replaceValue = function (newValue) {
+            return new Value(newValue, this.id);
+        };
         return Value;
     }());
     exports.Value = Value;
@@ -75,6 +89,71 @@ define("ast", ["require", "exports"], function (require, exports) {
         return Literal;
     }());
     exports.Literal = Literal;
+});
+define("edit", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var EditValue = (function () {
+        function EditValue(id, newValue) {
+            this.nodeType = 'value';
+            this.id = id;
+            this.newValue = newValue;
+        }
+        return EditValue;
+    }());
+    exports.EditValue = EditValue;
+    function e(name, classes) {
+        var children = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            children[_i - 2] = arguments[_i];
+        }
+        var el = document.createElement(name);
+        (_a = el.classList).add.apply(_a, classes);
+        children.forEach(function (child) {
+            return typeof child === 'string'
+                ? el.appendChild(document.createTextNode(child))
+                : el.appendChild(child);
+        });
+        return el;
+        var _a;
+    }
+    function editDomNode(dom, onEdit) {
+        var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return editChild(child, onEdit); }))));
+        return el;
+    }
+    function editGroupNode(group, onEdit) {
+        var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
+        return el;
+    }
+    function editValueNode(value, onEdit) {
+        var literal = value.value;
+        var content = e('span', ['literal', 'string'], "" + literal.value);
+        content.setAttribute('contenteditable', 'true');
+        content.addEventListener('input', function (e) {
+            var text = e.target.textContent;
+            if (text === null) {
+                throw new Error("cannot edit a text node without text?");
+            }
+            onEdit(new EditValue(value.id, text));
+        });
+        return e('p', ['child', 'value'], content);
+    }
+    function editChild(child, onEdit) {
+        switch (child.type) {
+            case "dom": return editDomNode(child, onEdit);
+            case "group": return editGroupNode(child, onEdit);
+            case "value": return editValueNode(child, onEdit);
+        }
+    }
+    function editGroup(group, onEdit) {
+        var el = e('div', ['group'], e('h3', ['name'], group.name), e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));
+        return el;
+    }
+    exports.default = function (groups, onEdit) {
+        return Object.keys(groups).map(function (name) {
+            return editGroup(groups[name], onEdit);
+        });
+    };
 });
 define("render", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -130,82 +209,68 @@ define("render", ["require", "exports"], function (require, exports) {
     }
     exports.default = render;
 });
-define("edit", ["require", "exports"], function (require, exports) {
+define("transform", ["require", "exports", "ast"], function (require, exports, ast_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function e(name, classes) {
-        var children = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            children[_i - 2] = arguments[_i];
-        }
-        var el = document.createElement(name);
-        (_a = el.classList).add.apply(_a, classes);
-        children.forEach(function (child) {
-            return typeof child === 'string'
-                ? el.appendChild(document.createTextNode(child))
-                : el.appendChild(child);
-        });
-        return el;
-        var _a;
-    }
-    function editDomNode(dom) {
-        var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(editChild))));
-        return el;
-    }
-    function editGroupNode(group) {
-        var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
-        return el;
-    }
-    function editValueNode(value) {
-        var literal = value.value;
-        var content = e('span', ['literal', 'string'], "" + literal.value);
-        content.setAttribute('contenteditable', 'true');
-        content.addEventListener('input', function (e) {
-            var target = document.getElementById("preview-" + value.value.id);
-            if (!target) {
-                throw new Error("preview out of sync, could not find #preview-" + value.value.id);
+    function editValue(groups, edit) {
+        var App = groups.App;
+        function editNode(node) {
+            var children;
+            switch (node.type) {
+                case 'dom':
+                    children = node.children.map(editNode);
+                    return new (ast_1.DomNode.bind.apply(ast_1.DomNode, [void 0, node.name].concat(children)))();
+                case 'group':
+                    children = node.children.map(editNode);
+                    return new (ast_1.GroupNode.bind.apply(ast_1.GroupNode, [void 0, node.name].concat(children)))();
+                case 'value':
+                    if (node.id === edit.id) {
+                        return node.replaceValue(edit.newValue);
+                    }
+                    return node;
             }
-            target.textContent = e.target.textContent;
-        });
-        return e('p', ['child', 'value'], content);
+        }
+        return Object.keys(groups).reduce(function (g, k) {
+            var group = groups[k];
+            var children = group.children.map(editNode);
+            g[k] = group.replaceChildren(children);
+            return g;
+        }, { App: App });
     }
-    function editChild(child) {
-        switch (child.type) {
-            case "dom": return editDomNode(child);
-            case "group": return editGroupNode(child);
-            case "value": return editValueNode(child);
+    function transform(groups, edit) {
+        switch (edit.nodeType) {
+            case 'value': return editValue(groups, edit);
         }
     }
-    function editGroup(group) {
-        var el = e('div', ['group'], e('h3', ['name'], group.name), e.apply(void 0, ['div', ['children']].concat(group.children.map(editChild))));
-        return el;
-    }
-    exports.default = function (groups) {
-        return Object.keys(groups).map(function (name) {
-            return editGroup(groups[name]);
-        });
-    };
+    exports.default = transform;
 });
-define("index", ["require", "exports", "ast", "render", "edit"], function (require, exports, ast_1, render_1, edit_1) {
+define("index", ["require", "exports", "ast", "edit", "render", "transform"], function (require, exports, ast_2, edit_1, render_1, transform_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var groups = {
-        App: new ast_1.Group('App', new ast_1.GroupNode('Header'), new ast_1.DomNode('div', new ast_1.DomNode('p', new ast_1.Value('hello here is some '), new ast_1.DomNode('em', new ast_1.Value('cool formatted')), new ast_1.Value(' content')), new ast_1.DomNode('p', new ast_1.Value('That is all, '), new ast_1.DomNode('a', new ast_1.Value('thanks')), new ast_1.Value('!'))), new ast_1.GroupNode('Footer')),
-        Header: new ast_1.Group('Header', new ast_1.DomNode('div', new ast_1.DomNode('h1', new ast_1.Value('Hello world!')), new ast_1.DomNode('h2', new ast_1.Value('Welcome to this demo.')))),
-        Footer: new ast_1.Group('Footer', new ast_1.DomNode('footer', new ast_1.DomNode('p', new ast_1.Value('Good bye!')))),
+        App: ast_2.Group.e('App', new ast_2.GroupNode('Header'), new ast_2.DomNode('div', new ast_2.DomNode('p', ast_2.Value.e('hello here is some '), new ast_2.DomNode('em', ast_2.Value.e('cool formatted')), ast_2.Value.e(' content')), new ast_2.DomNode('p', ast_2.Value.e('That is all, '), new ast_2.DomNode('a', ast_2.Value.e('thanks')), ast_2.Value.e('!'))), new ast_2.GroupNode('Footer')),
+        Header: ast_2.Group.e('Header', new ast_2.DomNode('div', new ast_2.DomNode('h1', ast_2.Value.e('Hello world!')), new ast_2.DomNode('h2', ast_2.Value.e('Welcome to this demo.')))),
+        Footer: ast_2.Group.e('Footer', new ast_2.DomNode('footer', new ast_2.DomNode('p', ast_2.Value.e('Good bye!')))),
     };
-    console.log('groups', groups);
+    function update(groups) {
+        var preview = document.getElementById('preview');
+        if (!preview) {
+            throw new Error('no preview');
+        }
+        preview.innerHTML = '';
+        console.log('groups', groups);
+        render_1.default(groups).forEach(function (el) { return preview.appendChild(el); });
+    }
     var editor = document.getElementById('source');
     if (!editor) {
         throw new Error('no editor');
     }
     editor.innerHTML = '';
-    edit_1.default(groups).forEach(function (el) { return editor.appendChild(el); });
-    var preview = document.getElementById('preview');
-    if (!preview) {
-        throw new Error('no preview');
+    function blah(edit) {
+        groups = transform_1.default(groups, edit);
+        update(groups);
     }
-    preview.innerHTML = '';
-    render_1.default(groups).forEach(function (el) { return preview.appendChild(el); });
+    edit_1.default(groups, blah).forEach(function (el) { return editor.appendChild(el); });
+    update(groups);
 });
 //# sourceMappingURL=app.js.map

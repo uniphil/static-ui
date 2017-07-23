@@ -6,13 +6,23 @@ let id: (pre: string) => string = (() => {
 
 export class Group {
     readonly id: string;
+    readonly type: 'group-definition';
     readonly name: string;
     readonly children: Array<UiNode>;
 
-    constructor(name: string, ...children: Array<UiNode>) {
-        this.id = id('group-definition');
+    private constructor(name: string, children: Array<UiNode>,
+                        newId: string = id('group-definition')) {
+        this.id = newId;
         this.name = name;
         this.children = children;
+    }
+
+    static e(name: string, ...children: Array<UiNode>): Group {
+        return new Group(name, children);
+    }
+
+    replaceChildren(newChildren: Array<UiNode>) {
+        return new Group(this.name, newChildren, this.id);
     }
 }
 
@@ -53,9 +63,18 @@ export class Value {
     readonly type = 'value';
     readonly value: Literal;
 
-    constructor(value: string | number | boolean) {
-        this.id = id('value');
+    private constructor(value: string | number | boolean,
+                        newId: string = id('value')) {
+        this.id = newId;
         this.value = new Literal(value);
+    }
+
+    static e(value: string): Value {
+        return new Value(value);
+    }
+
+    replaceValue(newValue: string): Value {
+        return new Value(newValue, this.id);
     }
 }
 
@@ -69,4 +88,7 @@ export class Literal {
     }
 }
 
-export type GroupMap = {App: Group, [key: string]: Group};
+export type GroupMap = {
+    App: Group,
+    [key: string]: Group,
+};
