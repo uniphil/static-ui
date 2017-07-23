@@ -21,14 +21,16 @@ body {
 
 #source {
   font-family: monospace;
+  overflow: auto;
+  padding: 0.25rem 0 0.25rem 0.25rem;
 }
 
 #preview {
   background: #fff;
   box-shadow: 0 0 1px #999;
-  overflow: auto;
-  margin: 0.5em;
+  margin: 0.5rem;
   margin-left: 0.25em;
+  overflow: auto;
 }
 
 .--app-err {
@@ -45,8 +47,7 @@ body {
   background: #f4f4f4;
   box-shadow: 0 0 1px #999;
   box-sizing: border-box;
-  margin: 0.5em;
-  margin-right: 0.25em;
+  margin: 0.25rem;
   padding: 0.5em;
 }
 #source > .group > .name {
@@ -109,6 +110,7 @@ body {
   color: var(--literal-colour);
   content: "(";
   margin-right: 0;
+  opacity: 1;
 }
 #source .child.value:after {
   color: var(--literal-colour);
