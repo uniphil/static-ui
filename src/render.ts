@@ -52,6 +52,7 @@ function renderDomNode(domNode: DomNode, context: Context, groups: GroupMap): HT
 function renderValueNode(value: Literal): HTMLElement {
     const el = document.createElement('span');
     el.innerHTML = `${value.value}`;
+    el.id = `preview-${value.id}`;
     return el;
 }
 

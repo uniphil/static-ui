@@ -38,6 +38,11 @@ function editValueNode(value: Value) {
     const literal = value.value;
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
+    content.addEventListener('input', e => {
+        const target = document.getElementById(`preview-${value.value.id}`);
+        if (!target) { throw new Error(`preview out of sync, could not find #preview-${value.value.id}`) }
+        target.textContent = (e.target as HTMLElement).textContent;
+    });
     return e('p', ['child', 'value'], content);
 }
 

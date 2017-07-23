@@ -9,14 +9,19 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 define("ast", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var id = (function () {
+        var next = 0;
+        return function (pre) { return pre + "-" + next++; };
+    })();
     var Group = (function () {
         function Group(name) {
             var children = [];
             for (var _i = 1; _i < arguments.length; _i++) {
                 children[_i - 1] = arguments[_i];
             }
-            this.name = name,
-                this.children = children;
+            this.id = id('group-definition');
+            this.name = name;
+            this.children = children;
         }
         return Group;
     }());
@@ -27,9 +32,10 @@ define("ast", ["require", "exports"], function (require, exports) {
             for (var _i = 1; _i < arguments.length; _i++) {
                 children[_i - 1] = arguments[_i];
             }
-            this.type = "group";
+            this.type = 'group';
             this.requires = null;
             this.provides = null;
+            this.id = id('group');
             this.name = name;
             this.children = children;
         }
@@ -42,9 +48,10 @@ define("ast", ["require", "exports"], function (require, exports) {
             for (var _i = 1; _i < arguments.length; _i++) {
                 children[_i - 1] = arguments[_i];
             }
-            this.type = "dom";
+            this.type = 'dom';
             this.requires = null;
             this.provides = null;
+            this.id = id('dom');
             this.name = name;
             this.children = children;
         }
@@ -54,6 +61,7 @@ define("ast", ["require", "exports"], function (require, exports) {
     var Value = (function () {
         function Value(value) {
             this.type = 'value';
+            this.id = id('value');
             this.value = new Literal(value);
         }
         return Value;
@@ -61,6 +69,7 @@ define("ast", ["require", "exports"], function (require, exports) {
     exports.Value = Value;
     var Literal = (function () {
         function Literal(value) {
+            this.id = id('literal');
             this.value = value;
         }
         return Literal;
@@ -99,6 +108,7 @@ define("render", ["require", "exports"], function (require, exports) {
     function renderValueNode(value) {
         var el = document.createElement('span');
         el.innerHTML = "" + value.value;
+        el.id = "preview-" + value.id;
         return el;
     }
     function renderChild(child, context, groups) {
@@ -150,6 +160,13 @@ define("edit", ["require", "exports"], function (require, exports) {
         var literal = value.value;
         var content = e('span', ['literal', 'string'], "" + literal.value);
         content.setAttribute('contenteditable', 'true');
+        content.addEventListener('input', function (e) {
+            var target = document.getElementById("preview-" + value.value.id);
+            if (!target) {
+                throw new Error("preview out of sync, could not find #preview-" + value.value.id);
+            }
+            target.textContent = e.target.textContent;
+        });
         return e('p', ['child', 'value'], content);
     }
     function editChild(child) {
