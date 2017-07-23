@@ -190,7 +190,7 @@ define("index", ["require", "exports", "ast", "render", "edit"], function (requi
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var groups = {
-        App: new ast_1.Group('App', new ast_1.GroupNode('Header'), new ast_1.DomNode('div', new ast_1.DomNode('p', new ast_1.Value('hello here is some '), new ast_1.DomNode('em', new ast_1.Value('cool formatted')), new ast_1.Value(' content')), new ast_1.DomNode('p', new ast_1.Value('That is all, thanks'))), new ast_1.GroupNode('Footer')),
+        App: new ast_1.Group('App', new ast_1.GroupNode('Header'), new ast_1.DomNode('div', new ast_1.DomNode('p', new ast_1.Value('hello here is some '), new ast_1.DomNode('em', new ast_1.Value('cool formatted')), new ast_1.Value(' content')), new ast_1.DomNode('p', new ast_1.Value('That is all, '), new ast_1.DomNode('a', new ast_1.Value('thanks')), new ast_1.Value('!'))), new ast_1.GroupNode('Footer')),
         Header: new ast_1.Group('Header', new ast_1.DomNode('div', new ast_1.DomNode('h1', new ast_1.Value('Hello world!')), new ast_1.DomNode('h2', new ast_1.Value('Welcome to this demo.')))),
         Footer: new ast_1.Group('Footer', new ast_1.DomNode('footer', new ast_1.DomNode('p', new ast_1.Value('Good bye!')))),
     };

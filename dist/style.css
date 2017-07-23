@@ -48,8 +48,13 @@ body {
   box-shadow: 0 0 1px #999;
   box-sizing: border-box;
   margin: 0.25rem;
+  margin-bottom: 0.5rem;
   padding: 0.5em;
 }
+#source > .group:last-child {
+  margin-bottom: 0.25rem;
+}
+
 #source > .group > .name {
   color: #333;
   font-weight: bold;
