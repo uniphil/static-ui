@@ -4,6 +4,7 @@
   "description": "",
   "main": "ast.js",
   "scripts": {
+    "start": "concurrently -k -n 'tsc,web' 'tsc --watch --project .' 'serve dist'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,5 +19,9 @@
   "homepage": "https://github.com/uniphil/static-ui#readme",
   "dependencies": {
     "typescript": "^2.4.2"
+  },
+  "devDependencies": {
+    "concurrently": "^3.5.0",
+    "serve": "^6.0.2"
   }
 }
