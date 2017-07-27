@@ -27,6 +27,7 @@ export class Group {
 }
 
 export type UiNode = GroupNode | DomNode | Value;
+export type Node = Group | UiNode;
 
 export class GroupNode {
     readonly id: string;

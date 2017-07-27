@@ -1,9 +1,9 @@
 import State from './state';
 import {
     DomNode,
-    Group,
     GroupMap,
     GroupNode,
+    Node,
     UiNode,
 } from './ast';
 import {
@@ -24,19 +24,13 @@ function refresh(state: State, onEdit: OnEdit): State {
 }
 
 
-// function selectPreview(preview: HTMLElement, node: DomNode | GroupNode) {
-// }
-
-
-function selectPreviewAll(preview: HTMLElement, node: Group | UiNode) {
-    const q = (() => { switch (node.type) {
+function selectNode(node: Node) {
+    switch (node.type) {
         case 'group-definition': return `[data-${node.id}]`;
         case 'group': return `[data-${node.id}]`;
         case 'dom':   return `#preview-${node.id}`;
         case 'value': return `#preview-${node.value.id}`;
-    }})();
-
-    return preview.querySelectorAll(q);
+    }
 }
 
 
@@ -49,7 +43,7 @@ function editHover(state: State, edit: EditHover): State {
         el.classList.remove('hovering'));
 
     if (edit.node) {
-        const els = selectPreviewAll(state.preview, edit.node);
+        const els = state.preview.querySelectorAll(selectNode(edit.node));
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('hovering'));
     }
@@ -67,7 +61,7 @@ function editSelect(state: State, edit: EditSelect): State {
         el.classList.remove('selecting'));
 
     if (edit.node) {
-        const els = selectPreviewAll(state.preview, edit.node);
+        const els = state.preview.querySelectorAll(selectNode(edit.node));
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('selecting'));
     }

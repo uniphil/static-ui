@@ -2,6 +2,7 @@ import {
     DomNode,
     Group,
     GroupNode,
+    Node,
     UiNode,
     Value,
 } from './ast';
@@ -22,9 +23,9 @@ export class EditInit {
 
 export class EditHover {
     readonly editType = 'hover';
-    readonly node?: Group | UiNode;
+    readonly node?: Node;
 
-    constructor(node?: Group | UiNode) {
+    constructor(node?: Node) {
         this.node = node;
     }
 }
@@ -32,9 +33,9 @@ export class EditHover {
 
 export class EditSelect {
     readonly editType = 'select';
-    readonly node?: UiNode;
+    readonly node?: Node;
 
-    constructor(node?: UiNode) {
+    constructor(node?: Node) {
         this.node = node;
     }
 }
@@ -80,6 +81,11 @@ function renderDomNode(dom: DomNode, onEdit: OnEdit) {
         onEdit(new EditHover());
     }, true);
 
+    el.addEventListener('click', _e => {
+        onEdit(new EditSelect(dom));
+    }, true);
+
+    el.id = `editor-${dom.id}`;
     return el;
 }
 
@@ -95,11 +101,11 @@ function renderGroupNode(group: GroupNode, onEdit: OnEdit) {
         onEdit(new EditHover());
     }, true);
 
-    const select: EventListener = _e => {
+    el.addEventListener('click', _e => {
         onEdit(new EditSelect(group));
-    }
-    el.addEventListener('click', select, true);
+    }, true);
 
+    el.id = `editor-${group.id}`;
     return el;
 }
 
@@ -139,7 +145,9 @@ function renderValueNode(value: Value, onEdit: OnEdit) {
         onEdit(new EditValue(literal.id, text));
     }, true);
 
-    return e('p', ['child', 'value'], content);
+    const el = e('p', ['child', 'value'], content);
+    el.id = `editor-${value.id}`;
+    return el;
 }
 
 
@@ -162,11 +170,16 @@ function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
         onEdit(new EditHover());
     }, true);
 
+    name.addEventListener('click', _e => {
+        onEdit(new EditSelect(group));
+    }, true);
+
     const el = e('div', ['group'],
         name,
         e('div', ['children'],
             ...group.children.map(child => renderChild(child, onEdit))));
 
+    el.id = `editor-${group.id}`;
     return el;
 }
 

@@ -176,6 +176,10 @@ define("edit", ["require", "exports"], function (require, exports) {
         el.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
+        el.addEventListener('click', function (_e) {
+            onEdit(new EditSelect(dom));
+        }, true);
+        el.id = "editor-" + dom.id;
         return el;
     }
     function renderGroupNode(group, onEdit) {
@@ -186,10 +190,10 @@ define("edit", ["require", "exports"], function (require, exports) {
         el.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
-        var select = function (_e) {
+        el.addEventListener('click', function (_e) {
             onEdit(new EditSelect(group));
-        };
-        el.addEventListener('click', select, true);
+        }, true);
+        el.id = "editor-" + group.id;
         return el;
     }
     function renderValueNode(value, onEdit) {
@@ -222,7 +226,9 @@ define("edit", ["require", "exports"], function (require, exports) {
             }
             onEdit(new EditValue(literal.id, text));
         }, true);
-        return e('p', ['child', 'value'], content);
+        var el = e('p', ['child', 'value'], content);
+        el.id = "editor-" + value.id;
+        return el;
     }
     function renderChild(child, onEdit) {
         switch (child.type) {
@@ -239,7 +245,11 @@ define("edit", ["require", "exports"], function (require, exports) {
         name.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
+        name.addEventListener('click', function (_e) {
+            onEdit(new EditSelect(group));
+        }, true);
         var el = e('div', ['group'], name, e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return renderChild(child, onEdit); }))));
+        el.id = "editor-" + group.id;
         return el;
     }
     function render(el, state, onEdit) {
@@ -329,18 +339,13 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         render_1.default(state.preview, state, onEdit);
         return state;
     }
-    // function selectPreview(preview: HTMLElement, node: DomNode | GroupNode) {
-    // }
-    function selectPreviewAll(preview, node) {
-        var q = (function () {
-            switch (node.type) {
-                case 'group-definition': return "[data-" + node.id + "]";
-                case 'group': return "[data-" + node.id + "]";
-                case 'dom': return "#preview-" + node.id;
-                case 'value': return "#preview-" + node.value.id;
-            }
-        })();
-        return preview.querySelectorAll(q);
+    function selectNode(node) {
+        switch (node.type) {
+            case 'group-definition': return "[data-" + node.id + "]";
+            case 'group': return "[data-" + node.id + "]";
+            case 'dom': return "#preview-" + node.id;
+            case 'value': return "#preview-" + node.value.id;
+        }
     }
     function editHover(state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
@@ -350,7 +355,7 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
             return el.classList.remove('hovering');
         });
         if (edit.node) {
-            var els = selectPreviewAll(state.preview, edit.node);
+            var els = state.preview.querySelectorAll(selectNode(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('hovering');
             });
@@ -365,7 +370,7 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
             return el.classList.remove('selecting');
         });
         if (edit.node) {
-            var els = selectPreviewAll(state.preview, edit.node);
+            var els = state.preview.querySelectorAll(selectNode(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('selecting');
             });
