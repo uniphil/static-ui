@@ -168,8 +168,8 @@ define("edit", ["require", "exports"], function (require, exports) {
         return el;
         var _a;
     }
-    function editDomNode(dom, onEdit) {
-        var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return editChild(child, onEdit); }))));
+    function renderDomNode(dom, onEdit) {
+        var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return renderChild(child, onEdit); }))));
         el.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(dom));
         }, true);
@@ -178,7 +178,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         }, true);
         return el;
     }
-    function editGroupNode(group, onEdit) {
+    function renderGroupNode(group, onEdit) {
         var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
         el.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(group));
@@ -186,9 +186,13 @@ define("edit", ["require", "exports"], function (require, exports) {
         el.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
+        var select = function (_e) {
+            onEdit(new EditSelect(group));
+        };
+        el.addEventListener('click', select, true);
         return el;
     }
-    function editValueNode(value, onEdit) {
+    function renderValueNode(value, onEdit) {
         var literal = value.value;
         var content = e('span', ['literal', 'string'], "" + literal.value);
         content.setAttribute('contenteditable', 'true');
@@ -220,11 +224,11 @@ define("edit", ["require", "exports"], function (require, exports) {
         }, true);
         return e('p', ['child', 'value'], content);
     }
-    function editChild(child, onEdit) {
+    function renderChild(child, onEdit) {
         switch (child.type) {
-            case "dom": return editDomNode(child, onEdit);
-            case "group": return editGroupNode(child, onEdit);
-            case "value": return editValueNode(child, onEdit);
+            case "dom": return renderDomNode(child, onEdit);
+            case "group": return renderGroupNode(child, onEdit);
+            case "value": return renderValueNode(child, onEdit);
         }
     }
     function renderGroup(group, onEdit) {
@@ -235,7 +239,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         name.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
-        var el = e('div', ['group'], name, e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));
+        var el = e('div', ['group'], name, e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return renderChild(child, onEdit); }))));
         return el;
     }
     function render(el, state, onEdit) {

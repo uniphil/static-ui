@@ -67,11 +67,11 @@ function e(name: string, classes: Array<string>,
 }
 
 
-function editDomNode(dom: DomNode, onEdit: OnEdit) {
+function renderDomNode(dom: DomNode, onEdit: OnEdit) {
     const el = e('div', ['child', 'dom'],
         e('h4', ['name'], dom.name),
         e('div', ['children'],
-            ...dom.children.map(child => editChild(child, onEdit))));
+            ...dom.children.map(child => renderChild(child, onEdit))));
 
     el.addEventListener('mouseover', _e => {
         onEdit(new EditHover(dom));
@@ -84,7 +84,7 @@ function editDomNode(dom: DomNode, onEdit: OnEdit) {
 }
 
 
-function editGroupNode(group: GroupNode, onEdit: OnEdit) {
+function renderGroupNode(group: GroupNode, onEdit: OnEdit) {
     const el = e('div', ['child', 'group'],
         e('h4', ['name'], group.name));
 
@@ -95,11 +95,16 @@ function editGroupNode(group: GroupNode, onEdit: OnEdit) {
         onEdit(new EditHover());
     }, true);
 
+    const select: EventListener = _e => {
+        onEdit(new EditSelect(group));
+    }
+    el.addEventListener('click', select, true);
+
     return el;
 }
 
 
-function editValueNode(value: Value, onEdit: OnEdit) {
+function renderValueNode(value: Value, onEdit: OnEdit) {
     const literal = value.value;
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
@@ -138,11 +143,11 @@ function editValueNode(value: Value, onEdit: OnEdit) {
 }
 
 
-function editChild(child: UiNode, onEdit: OnEdit) {
+function renderChild(child: UiNode, onEdit: OnEdit) {
     switch (child.type) {
-        case "dom":   return editDomNode(child, onEdit);
-        case "group": return editGroupNode(child, onEdit);
-        case "value": return editValueNode(child, onEdit);
+        case "dom":   return renderDomNode(child, onEdit);
+        case "group": return renderGroupNode(child, onEdit);
+        case "value": return renderValueNode(child, onEdit);
     }
 }
 
@@ -160,7 +165,7 @@ function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
     const el = e('div', ['group'],
         name,
         e('div', ['children'],
-            ...group.children.map(child => editChild(child, onEdit))));
+            ...group.children.map(child => renderChild(child, onEdit))));
 
     return el;
 }

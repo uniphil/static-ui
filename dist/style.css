@@ -66,6 +66,7 @@ body {
   margin-left: 2ch;
 }
 #source .child {
+  align-items: flex-start;
   display: flex;
   margin-bottom: 0.4em;
 }
