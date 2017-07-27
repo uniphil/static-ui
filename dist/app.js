@@ -90,12 +90,46 @@ define("ast", ["require", "exports"], function (require, exports) {
     }());
     exports.Literal = Literal;
 });
+define("state", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var State = (function () {
+        function State(editor, preview, groups, hovered, selected) {
+            this.editor = editor;
+            this.preview = preview;
+            this.hovered = hovered;
+            this.selected = selected;
+            this.groups = groups;
+        }
+        State.create = function (editor, preview, groups) {
+            return new State(editor, preview, groups);
+        };
+        State.prototype.hover = function (id) {
+            return new State(this.editor, this.preview, this.groups, id, this.selected);
+        };
+        State.prototype.select = function (id) {
+            return new State(this.editor, this.preview, this.groups, this.hovered, id);
+        };
+        State.prototype.change = function (groups) {
+            return new State(this.editor, this.preview, groups, this.hovered, this.selected);
+        };
+        return State;
+    }());
+    exports.default = State;
+});
 define("edit", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var EditInit = (function () {
+        function EditInit() {
+            this.editType = 'init';
+        }
+        return EditInit;
+    }());
+    exports.EditInit = EditInit;
     var EditValue = (function () {
         function EditValue(id, newValue) {
-            this.nodeType = 'value';
+            this.editType = 'change-value';
             this.id = id;
             this.newValue = newValue;
         }
@@ -121,7 +155,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return editChild(child, onEdit); }))));
         return el;
     }
-    function editGroupNode(group, onEdit) {
+    function editGroupNode(group, _onEdit) {
         var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
         return el;
     }
@@ -149,11 +183,17 @@ define("edit", ["require", "exports"], function (require, exports) {
         var el = e('div', ['group'], e('h3', ['name'], group.name), e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));
         return el;
     }
-    exports.default = function (groups, onEdit) {
-        return Object.keys(groups).map(function (name) {
-            return editGroup(groups[name], onEdit);
+    function render(el, state, onEdit) {
+        el.innerHTML = '';
+        Object.keys(state.groups)
+            .map(function (name) {
+            return editGroup(state.groups[name], onEdit);
+        })
+            .forEach(function (childEl) {
+            return el.appendChild(childEl);
         });
-    };
+    }
+    exports.render = render;
 });
 define("render", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -200,20 +240,27 @@ define("render", ["require", "exports"], function (require, exports) {
                 return [renderValueNode(child.value)];
         }
     }
-    function render(groups) {
-        var App = groups.App;
+    function render(el, state, _onEdit) {
+        el.innerHTML = '';
+        var App = state.groups.App;
         if (typeof App === 'undefined') {
             throw new Error('no App group :(');
         }
-        return renderGroup(App, { children: App.children }, groups);
+        renderGroup(App, { children: App.children }, state.groups)
+            .forEach(function (childEl) { return el.appendChild(childEl); });
     }
     exports.default = render;
 });
-define("transform", ["require", "exports", "ast"], function (require, exports, ast_1) {
+define("transform", ["require", "exports", "ast", "edit", "render"], function (require, exports, ast_1, edit_1, render_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function editValue(groups, edit) {
-        var App = groups.App;
+    function refresh(state, onEdit) {
+        edit_1.render(state.editor, state, onEdit);
+        render_1.default(state.preview, state, onEdit);
+        return state;
+    }
+    function editValue(state, edit) {
+        var App = state.groups.App;
         function editNode(node) {
             var children;
             switch (node.type) {
@@ -230,47 +277,60 @@ define("transform", ["require", "exports", "ast"], function (require, exports, a
                     return node;
             }
         }
-        return Object.keys(groups).reduce(function (g, k) {
-            var group = groups[k];
+        var newGroups = Object.keys(state.groups).reduce(function (g, k) {
+            var group = state.groups[k];
             var children = group.children.map(editNode);
             g[k] = group.replaceChildren(children);
             return g;
         }, { App: App });
+        return state.change(newGroups);
     }
-    function transform(groups, edit) {
-        switch (edit.nodeType) {
-            case 'value': return editValue(groups, edit);
+    function transform(state, edit, onEdit) {
+        switch (edit.editType) {
+            case 'init': return refresh(state, onEdit);
+            case 'change-value': return editValue(state, edit);
         }
     }
     exports.default = transform;
 });
-define("index", ["require", "exports", "ast", "edit", "render", "transform"], function (require, exports, ast_2, edit_1, render_1, transform_1) {
+define("index", ["require", "exports", "ast", "edit", "state", "transform"], function (require, exports, ast_2, edit_2, state_1, transform_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var groups = {
-        App: ast_2.Group.e('App', new ast_2.GroupNode('Header'), new ast_2.DomNode('div', new ast_2.DomNode('p', ast_2.Value.e('hello here is some '), new ast_2.DomNode('em', ast_2.Value.e('cool formatted')), ast_2.Value.e(' content')), new ast_2.DomNode('p', ast_2.Value.e('That is all, '), new ast_2.DomNode('a', ast_2.Value.e('thanks')), ast_2.Value.e('!'))), new ast_2.GroupNode('Footer')),
-        Header: ast_2.Group.e('Header', new ast_2.DomNode('div', new ast_2.DomNode('h1', ast_2.Value.e('Hello world!')), new ast_2.DomNode('h2', ast_2.Value.e('Welcome to this demo.')))),
-        Footer: ast_2.Group.e('Footer', new ast_2.DomNode('footer', new ast_2.DomNode('p', ast_2.Value.e('Good bye!')))),
+    var demoGroups = {
+        App: ast_2.Group.e('App', new ast_2.GroupNode('Header'), new ast_2.DomNode('div', new ast_2.DomNode('p', ast_2.Value.e('The application structure is on the left. Text can be '), new ast_2.DomNode('em', ast_2.Value.e('formatted')), ast_2.Value.e(' with HTML nodes.')), new ast_2.DomNode('p', ast_2.Value.e('HTML also means we can create '), new ast_2.DomNode('a', ast_2.Value.e('links')), ast_2.Value.e('!'))), new ast_2.GroupNode('Footer')),
+        Header: ast_2.Group.e('Header', new ast_2.DomNode('div', new ast_2.DomNode('h1', ast_2.Value.e('Hello world!')), new ast_2.DomNode('h2', ast_2.Value.e('Welcome to static.')))),
+        Footer: ast_2.Group.e('Footer', new ast_2.DomNode('footer', new ast_2.DomNode('p', ast_2.Value.e('Parts of the app can be grouped into reusable pieces, like this footer.')))),
     };
-    function update(groups) {
+    var StateManager = (function () {
+        function StateManager(initialState) {
+            this.state = initialState;
+        }
+        StateManager.prototype.push = function (newState) {
+            this.state = newState;
+        };
+        StateManager.prototype.get = function () {
+            return this.state;
+        };
+        return StateManager;
+    }());
+    (function () {
+        var editor = document.getElementById('source');
+        if (!editor) {
+            throw new Error('no editor');
+        }
+        editor.innerHTML = '';
         var preview = document.getElementById('preview');
         if (!preview) {
             throw new Error('no preview');
         }
         preview.innerHTML = '';
-        console.log('groups', groups);
-        render_1.default(groups).forEach(function (el) { return preview.appendChild(el); });
-    }
-    var editor = document.getElementById('source');
-    if (!editor) {
-        throw new Error('no editor');
-    }
-    editor.innerHTML = '';
-    function blah(edit) {
-        groups = transform_1.default(groups, edit);
-        update(groups);
-    }
-    edit_1.default(groups, blah).forEach(function (el) { return editor.appendChild(el); });
-    update(groups);
+        var initialState = state_1.default.create(editor, preview, demoGroups);
+        var stateManager = new StateManager(initialState);
+        function update(edit) {
+            var nextState = transform_1.default(stateManager.get(), edit, update);
+            stateManager.push(nextState);
+        }
+        update(new edit_2.EditInit());
+    })();
 });
 //# sourceMappingURL=app.js.map

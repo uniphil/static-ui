@@ -6,6 +6,8 @@ import {
   Literal,
   UiNode,
 } from './ast';
+import State from './state';
+import { OnEdit } from './edit';
 
 
 type Context = { children: Array<UiNode> };
@@ -69,10 +71,12 @@ function renderChild(child: UiNode, context: Context, groups: GroupMap): Array<H
 }
 
 
-export default function render(groups: GroupMap) {
-    const App = groups.App;
+export default function render(el: HTMLElement, state: State, _onEdit: OnEdit) {
+    el.innerHTML = '';
+    const App = state.groups.App;
     if (typeof App === 'undefined') {
         throw new Error('no App group :(');
     }
-    return renderGroup(App, { children: App.children }, groups);
+    renderGroup(App, { children: App.children }, state.groups)
+        .forEach(childEl => el.appendChild(childEl));
 }

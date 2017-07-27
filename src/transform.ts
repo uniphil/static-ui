@@ -1,19 +1,28 @@
+import State from './state';
 import {
     DomNode,
-    Group,
     GroupMap,
     GroupNode,
     UiNode,
-    Value,
 } from './ast';
 import {
+    render as renderEditor,
     Edit,
     EditValue,
+    OnEdit,
 } from './edit';
+import renderPreview from './render';
 
 
-function editValue(groups: GroupMap, edit: EditValue): GroupMap {
-    const { App } = groups;
+function refresh(state: State, onEdit: OnEdit): State {
+    renderEditor(state.editor, state, onEdit);
+    renderPreview(state.preview, state, onEdit);
+    return state;
+}
+
+
+function editValue(state: State, edit: EditValue): State {
+    const { App } = state.groups;
 
     function editNode(node: UiNode): UiNode {
         let children;
@@ -32,17 +41,20 @@ function editValue(groups: GroupMap, edit: EditValue): GroupMap {
         }
     }
 
-    return Object.keys(groups).reduce((g: GroupMap, k) => {
-        const group = groups[k];
+    const newGroups = Object.keys(state.groups).reduce((g: GroupMap, k) => {
+        const group = state.groups[k];
         const children = group.children.map(editNode);
         g[k] = group.replaceChildren(children);
         return g;
     }, { App });
+
+    return state.change(newGroups);
 }
 
 
-export default function transform(groups: GroupMap, edit: Edit) {
-    switch (edit.nodeType) {
-        case 'value': return editValue(groups, edit);
+export default function transform(state: State, edit: Edit, onEdit: OnEdit): State {
+    switch (edit.editType) {
+        case 'init': return refresh(state, onEdit);
+        case 'change-value': return editValue(state, edit);
     }
 }

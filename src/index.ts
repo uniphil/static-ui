@@ -5,27 +5,27 @@ import {
   GroupNode,
   Value,
 } from './ast';
-import edit, {
+import {
     Edit,
-    OnEdit,
+    EditInit,
 } from './edit';
-import render from './render';
+import State from './state';
 import transform from './transform';
 
 
-let groups: GroupMap = {
+const demoGroups: GroupMap = {
     App: Group.e('App',
         new GroupNode('Header'),
         new DomNode('div',
             new DomNode('p',
-                Value.e('hello here is some '),
+                Value.e('The application structure is on the left. Text can be '),
                 new DomNode('em',
-                    Value.e('cool formatted')),
-                Value.e(' content')),
+                    Value.e('formatted')),
+                Value.e(' with HTML nodes.')),
             new DomNode('p',
-                Value.e('That is all, '),
+                Value.e('HTML also means we can create '),
                 new DomNode('a',
-                    Value.e('thanks')),
+                    Value.e('links')),
                 Value.e('!')),
         ),
         new GroupNode('Footer'),
@@ -33,37 +33,50 @@ let groups: GroupMap = {
     Header: Group.e('Header',
         new DomNode('div',
             new DomNode('h1', Value.e('Hello world!')),
-            new DomNode('h2', Value.e('Welcome to this demo.')),
+            new DomNode('h2', Value.e('Welcome to static.')),
         ),
     ),
     Footer: Group.e('Footer',
         new DomNode('footer',
-            new DomNode('p', Value.e('Good bye!'))
+            new DomNode('p', Value.e('Parts of the app can be grouped into reusable pieces, like this footer.'))
         ),
     ),
 };
 
-function update(groups: GroupMap) {
+
+class StateManager {
+    private state: State;
+
+    constructor(initialState: State) {
+        this.state = initialState;
+    }
+
+    push(newState: State) {
+        this.state = newState;
+    }
+
+    get(): State {
+        return this.state;
+    }
+}
+
+
+(function() {
+    const editor = document.getElementById('source');
+    if (!editor) { throw new Error('no editor'); }
+    editor.innerHTML = '';
+
     const preview = document.getElementById('preview');
     if (!preview) { throw new Error('no preview'); }
     preview.innerHTML = '';
 
-    console.log('groups', groups);
+    const initialState = State.create(editor, preview, demoGroups);
+    const stateManager = new StateManager(initialState);
 
-    render(groups).forEach((el: HTMLElement) => preview.appendChild(el));
-}
+    function update(edit: Edit) {
+        const nextState = transform(stateManager.get(), edit, update);
+        stateManager.push(nextState);
+    }
 
-
-const editor = document.getElementById('source');
-if (!editor) { throw new Error('no editor'); }
-editor.innerHTML = '';
-
-function blah(edit: Edit) {
-    groups = transform(groups, edit);
-    update(groups);
-}
-
-edit(groups, blah).forEach((el: HTMLElement) => editor.appendChild(el));
-
-update(groups);
-
+    update(new EditInit());
+})();

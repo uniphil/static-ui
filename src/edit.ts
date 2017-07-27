@@ -1,16 +1,25 @@
 import {
     DomNode,
     Group,
-    GroupMap,
     GroupNode,
     UiNode,
     Value,
 } from './ast';
 
+import State from './state';
+
+
+export type Edit = EditInit | EditValue;
+
+
+export class EditInit {
+    readonly editType = 'init';
+}
+
 
 export class EditValue {
+    readonly editType = 'change-value';
     readonly id: string;
-    readonly nodeType = 'value';
     readonly newValue: string;
 
     constructor(id: string, newValue: string) {
@@ -18,9 +27,6 @@ export class EditValue {
         this.newValue = newValue;
     }
 }
-
-
-export type Edit = EditValue;
 
 
 export type OnEdit = ((payload: Edit) => void);
@@ -47,7 +53,7 @@ function editDomNode(dom: DomNode, onEdit: OnEdit) {
 }
 
 
-function editGroupNode(group: GroupNode, onEdit: OnEdit) {
+function editGroupNode(group: GroupNode, _onEdit: OnEdit) {
     const el = e('div', ['child', 'group'],
         e('h4', ['name'], group.name));
     return el;
@@ -86,6 +92,12 @@ function editGroup(group: Group, onEdit: OnEdit): HTMLElement {
     return el;
 }
 
-export default (groups: GroupMap, onEdit: OnEdit) =>
-    Object.keys(groups).map((name: string) =>
-        editGroup(groups[name], onEdit));
+
+export function render(el: HTMLElement, state: State, onEdit: OnEdit) {
+    el.innerHTML = '';
+    Object.keys(state.groups)
+        .map((name: string) =>
+            editGroup(state.groups[name], onEdit))
+        .forEach(childEl =>
+            el.appendChild(childEl));
+}
