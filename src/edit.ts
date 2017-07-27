@@ -19,10 +19,10 @@ export class EditInit {
 
 export class EditHover {
     readonly editType = 'hover';
-    readonly id?: string;
+    readonly node?: Group | UiNode;
 
-    constructor(id?: string) {
-        this.id = id;
+    constructor(node?: Group | UiNode) {
+        this.node = node;
     }
 }
 
@@ -62,7 +62,7 @@ function editDomNode(dom: DomNode, onEdit: OnEdit) {
 
     el.addEventListener('mouseover', (e) => {
         e.preventDefault();
-        onEdit(new EditHover(dom.id));
+        onEdit(new EditHover(dom));
     }, true);
     el.addEventListener('mouseout', (e) => {
         e.preventDefault();
@@ -73,9 +73,19 @@ function editDomNode(dom: DomNode, onEdit: OnEdit) {
 }
 
 
-function editGroupNode(group: GroupNode, _onEdit: OnEdit) {
+function editGroupNode(group: GroupNode, onEdit: OnEdit) {
     const el = e('div', ['child', 'group'],
         e('h4', ['name'], group.name));
+
+    el.addEventListener('mouseover', e => {
+        e.preventDefault();
+        onEdit(new EditHover(group));
+    }, true);
+    el.addEventListener('mouseout', e => {
+        e.preventDefault();
+        onEdit(new EditHover());
+    }, true);
+
     return el;
 }
 
@@ -95,7 +105,7 @@ function editValueNode(value: Value, onEdit: OnEdit) {
 
     content.addEventListener('mouseover', (e) => {
         e.preventDefault();
-        onEdit(new EditHover(literal.id));
+        onEdit(new EditHover(value));
     }, true);
     content.addEventListener('mouseout', (e) => {
         e.preventDefault();
@@ -116,10 +126,22 @@ function editChild(child: UiNode, onEdit: OnEdit) {
 
 
 function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
+    const name = e('h3', ['name'], group.name);
+
+    name.addEventListener('mouseover', e => {
+        e.preventDefault();
+        onEdit(new EditHover(group));
+    }, true);
+    name.addEventListener('mouseout', e => {
+        e.preventDefault();
+        onEdit(new EditHover());
+    }, true);
+
     const el = e('div', ['group'],
-        e('h3', ['name'], group.name),
+        name,
         e('div', ['children'],
             ...group.children.map(child => editChild(child, onEdit))));
+
     return el;
 }
 

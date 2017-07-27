@@ -28,13 +28,25 @@ function renderGroupNode(groupNode: GroupNode, context: Context, groups: GroupMa
         ...context,
         children: groupNode.children,
     };
-    return renderGroup(group, childContext, groups);
+    const childEls = renderGroup(group, childContext, groups);
+
+    childEls.forEach(el => {
+        el.setAttribute(`data-${groupNode.id}`, 'ya');
+    });
+
+    return childEls;
 }
 
 
 function renderGroup(group: Group, context: Context, groups: GroupMap) {
-    return flatMap((child: UiNode) => renderChild(child, context, groups),
-        group.children);
+    const childEls = flatMap((child: UiNode) =>
+        renderChild(child, context, groups), group.children);
+
+    childEls.forEach(el => {
+        el.setAttribute(`data-${group.id}`, 'ya');
+    });
+
+    return childEls;
 }
 
 

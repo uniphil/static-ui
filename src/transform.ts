@@ -1,6 +1,7 @@
 import State from './state';
 import {
     DomNode,
+    Group,
     GroupMap,
     GroupNode,
     UiNode,
@@ -22,20 +23,35 @@ function refresh(state: State, onEdit: OnEdit): State {
 }
 
 
+// function selectPreview(preview: HTMLElement, node: DomNode | GroupNode) {
+// }
+
+
+function selectPreviewAll(preview: HTMLElement, node: Group | UiNode) {
+    const q = (() => { switch (node.type) {
+        case 'group-definition': return `[data-${node.id}]`;
+        case 'group': return `[data-${node.id}]`;
+        case 'dom':   return `#preview-${node.id}`;
+        case 'value': return `#preview-${node.value.id}`;
+    }})();
+
+    return preview.querySelectorAll(q);
+}
+
+
 function editHover(state: State, edit: EditHover): State {
-    const nextState = state.hover(edit.id);
+    const nextState = state.hover(edit.node === undefined ? undefined : edit.node.id);
 
     const hovered = state.preview.querySelectorAll('.hovering');
     Array.prototype.forEach.call(hovered, (el: HTMLElement) =>
         el.classList.remove('hovering'));
 
-    if (edit.id) {
-        const el = document.getElementById(`preview-${edit.id}`);
-        if (el === null) {
-            throw new Error(`could not find blah ${edit.id}`);
-        }
-        el.classList.add('hovering');
+    if (edit.node && edit.node.id) {
+        const els = selectPreviewAll(state.preview, edit.node);
+        Array.prototype.forEach.call(els, (el: HTMLElement) =>
+            el.classList.add('hovering'));
     }
+
     return nextState;
 }
 

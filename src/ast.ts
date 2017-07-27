@@ -6,7 +6,7 @@ let id: (pre: string) => string = (() => {
 
 export class Group {
     readonly id: string;
-    readonly type: 'group-definition';
+    readonly type = 'group-definition';
     readonly name: string;
     readonly children: Array<UiNode>;
 

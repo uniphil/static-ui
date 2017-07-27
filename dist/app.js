@@ -16,6 +16,7 @@ define("ast", ["require", "exports"], function (require, exports) {
     var Group = (function () {
         function Group(name, children, newId) {
             if (newId === void 0) { newId = id('group-definition'); }
+            this.type = 'group-definition';
             this.id = newId;
             this.name = name;
             this.children = children;
@@ -128,9 +129,9 @@ define("edit", ["require", "exports"], function (require, exports) {
     }());
     exports.EditInit = EditInit;
     var EditHover = (function () {
-        function EditHover(id) {
+        function EditHover(node) {
             this.editType = 'hover';
-            this.id = id;
+            this.node = node;
         }
         return EditHover;
     }());
@@ -163,7 +164,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return editChild(child, onEdit); }))));
         el.addEventListener('mouseover', function (e) {
             e.preventDefault();
-            onEdit(new EditHover(dom.id));
+            onEdit(new EditHover(dom));
         }, true);
         el.addEventListener('mouseout', function (e) {
             e.preventDefault();
@@ -171,8 +172,16 @@ define("edit", ["require", "exports"], function (require, exports) {
         }, true);
         return el;
     }
-    function editGroupNode(group, _onEdit) {
+    function editGroupNode(group, onEdit) {
         var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
+        el.addEventListener('mouseover', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover(group));
+        }, true);
+        el.addEventListener('mouseout', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover());
+        }, true);
         return el;
     }
     function editValueNode(value, onEdit) {
@@ -188,7 +197,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         }, true);
         content.addEventListener('mouseover', function (e) {
             e.preventDefault();
-            onEdit(new EditHover(literal.id));
+            onEdit(new EditHover(value));
         }, true);
         content.addEventListener('mouseout', function (e) {
             e.preventDefault();
@@ -204,7 +213,16 @@ define("edit", ["require", "exports"], function (require, exports) {
         }
     }
     function renderGroup(group, onEdit) {
-        var el = e('div', ['group'], e('h3', ['name'], group.name), e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));
+        var name = e('h3', ['name'], group.name);
+        name.addEventListener('mouseover', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover(group));
+        }, true);
+        name.addEventListener('mouseout', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover());
+        }, true);
+        var el = e('div', ['group'], name, e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));
         return el;
     }
     function render(el, state, onEdit) {
@@ -233,10 +251,20 @@ define("render", ["require", "exports"], function (require, exports) {
             throw new Error("Unknown group: " + groupNode.name);
         }
         var childContext = __assign({}, context, { children: groupNode.children });
-        return renderGroup(group, childContext, groups);
+        var childEls = renderGroup(group, childContext, groups);
+        childEls.forEach(function (el) {
+            el.setAttribute("data-" + groupNode.id, 'ya');
+        });
+        return childEls;
     }
     function renderGroup(group, context, groups) {
-        return flatMap(function (child) { return renderChild(child, context, groups); }, group.children);
+        var childEls = flatMap(function (child) {
+            return renderChild(child, context, groups);
+        }, group.children);
+        childEls.forEach(function (el) {
+            el.setAttribute("data-" + group.id, 'ya');
+        });
+        return childEls;
     }
     function renderDomNode(domNode, context, groups) {
         var el = document.createElement(domNode.name);
@@ -284,18 +312,30 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         render_1.default(state.preview, state, onEdit);
         return state;
     }
+    // function selectPreview(preview: HTMLElement, node: DomNode | GroupNode) {
+    // }
+    function selectPreviewAll(preview, node) {
+        var q = (function () {
+            switch (node.type) {
+                case 'group-definition': return "[data-" + node.id + "]";
+                case 'group': return "[data-" + node.id + "]";
+                case 'dom': return "#preview-" + node.id;
+                case 'value': return "#preview-" + node.value.id;
+            }
+        })();
+        return preview.querySelectorAll(q);
+    }
     function editHover(state, edit) {
-        var nextState = state.hover(edit.id);
+        var nextState = state.hover(edit.node === undefined ? undefined : edit.node.id);
         var hovered = state.preview.querySelectorAll('.hovering');
         Array.prototype.forEach.call(hovered, function (el) {
             return el.classList.remove('hovering');
         });
-        if (edit.id) {
-            var el = document.getElementById("preview-" + edit.id);
-            if (el === null) {
-                throw new Error("could not find blah " + edit.id);
-            }
-            el.classList.add('hovering');
+        if (edit.node && edit.node.id) {
+            var els = selectPreviewAll(state.preview, edit.node);
+            Array.prototype.forEach.call(els, function (el) {
+                return el.classList.add('hovering');
+            });
         }
         return nextState;
     }
