@@ -170,24 +170,20 @@ define("edit", ["require", "exports"], function (require, exports) {
     }
     function editDomNode(dom, onEdit) {
         var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return editChild(child, onEdit); }))));
-        el.addEventListener('mouseover', function (e) {
-            e.preventDefault();
+        el.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(dom));
         }, true);
-        el.addEventListener('mouseout', function (e) {
-            e.preventDefault();
+        el.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
         return el;
     }
     function editGroupNode(group, onEdit) {
         var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
-        el.addEventListener('mouseover', function (e) {
-            e.preventDefault();
+        el.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(group));
         }, true);
-        el.addEventListener('mouseout', function (e) {
-            e.preventDefault();
+        el.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
         return el;
@@ -196,17 +192,24 @@ define("edit", ["require", "exports"], function (require, exports) {
         var literal = value.value;
         var content = e('span', ['literal', 'string'], "" + literal.value);
         content.setAttribute('contenteditable', 'true');
-        content.addEventListener('mouseover', function (e) {
-            e.preventDefault();
+        content.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(value));
         }, true);
-        content.addEventListener('mouseout', function (e) {
-            e.preventDefault();
+        content.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
-        content.addEventListener('click', function (e) {
-            e.preventDefault();
+        var select = function (_e) {
             onEdit(new EditSelect(value));
+        };
+        content.addEventListener('click', select, true);
+        content.addEventListener('focus', select, true);
+        content.addEventListener('blur', function (_e) {
+            onEdit(new EditSelect());
+        }, true);
+        content.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                e.target.blur();
+            }
         }, true);
         content.addEventListener('input', function (e) {
             var text = e.target.textContent;
@@ -226,12 +229,10 @@ define("edit", ["require", "exports"], function (require, exports) {
     }
     function renderGroup(group, onEdit) {
         var name = e('h3', ['name'], group.name);
-        name.addEventListener('mouseover', function (e) {
-            e.preventDefault();
+        name.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(group));
         }, true);
-        name.addEventListener('mouseout', function (e) {
-            e.preventDefault();
+        name.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
         var el = e('div', ['group'], name, e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));

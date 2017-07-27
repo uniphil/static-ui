@@ -73,12 +73,10 @@ function editDomNode(dom: DomNode, onEdit: OnEdit) {
         e('div', ['children'],
             ...dom.children.map(child => editChild(child, onEdit))));
 
-    el.addEventListener('mouseover', (e) => {
-        e.preventDefault();
+    el.addEventListener('mouseover', _e => {
         onEdit(new EditHover(dom));
     }, true);
-    el.addEventListener('mouseout', (e) => {
-        e.preventDefault();
+    el.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
@@ -90,12 +88,10 @@ function editGroupNode(group: GroupNode, onEdit: OnEdit) {
     const el = e('div', ['child', 'group'],
         e('h4', ['name'], group.name));
 
-    el.addEventListener('mouseover', e => {
-        e.preventDefault();
+    el.addEventListener('mouseover', _e => {
         onEdit(new EditHover(group));
     }, true);
-    el.addEventListener('mouseout', e => {
-        e.preventDefault();
+    el.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
@@ -108,18 +104,26 @@ function editValueNode(value: Value, onEdit: OnEdit) {
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
 
-    content.addEventListener('mouseover', (e) => {
-        e.preventDefault();
+    content.addEventListener('mouseover', _e => {
         onEdit(new EditHover(value));
     }, true);
-    content.addEventListener('mouseout', (e) => {
-        e.preventDefault();
+    content.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
-    content.addEventListener('click', e => {
-        e.preventDefault();
+    const select: EventListener = _e => {
         onEdit(new EditSelect(value));
+    };
+    content.addEventListener('click', select, true);
+    content.addEventListener('focus', select, true);
+    content.addEventListener('blur', _e => {
+        onEdit(new EditSelect());
+    }, true);
+
+    content.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            (e.target as HTMLElement).blur();
+        }
     }, true);
 
     content.addEventListener('input', e => {
@@ -146,12 +150,10 @@ function editChild(child: UiNode, onEdit: OnEdit) {
 function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
     const name = e('h3', ['name'], group.name);
 
-    name.addEventListener('mouseover', e => {
-        e.preventDefault();
+    name.addEventListener('mouseover', _e => {
         onEdit(new EditHover(group));
     }, true);
-    name.addEventListener('mouseout', e => {
-        e.preventDefault();
+    name.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
