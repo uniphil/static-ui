@@ -9,7 +9,10 @@ import {
 import State from './state';
 
 
-export type Edit = EditInit | EditHover | EditValue;
+export type Edit = EditInit
+                 | EditHover
+                 | EditSelect
+                 | EditValue;
 
 
 export class EditInit {
@@ -22,6 +25,16 @@ export class EditHover {
     readonly node?: Group | UiNode;
 
     constructor(node?: Group | UiNode) {
+        this.node = node;
+    }
+}
+
+
+export class EditSelect {
+    readonly editType = 'select';
+    readonly node?: UiNode;
+
+    constructor(node?: UiNode) {
         this.node = node;
     }
 }
@@ -95,14 +108,6 @@ function editValueNode(value: Value, onEdit: OnEdit) {
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
 
-    content.addEventListener('input', e => {
-        const text = (e.target as HTMLElement).textContent;
-        if (text === null) {
-            throw new Error(`cannot edit a text node without text?`);
-        }
-        onEdit(new EditValue(literal.id, text));
-    }, true);
-
     content.addEventListener('mouseover', (e) => {
         e.preventDefault();
         onEdit(new EditHover(value));
@@ -110,6 +115,19 @@ function editValueNode(value: Value, onEdit: OnEdit) {
     content.addEventListener('mouseout', (e) => {
         e.preventDefault();
         onEdit(new EditHover());
+    }, true);
+
+    content.addEventListener('click', e => {
+        e.preventDefault();
+        onEdit(new EditSelect(value));
+    }, true);
+
+    content.addEventListener('input', e => {
+        const text = (e.target as HTMLElement).textContent;
+        if (text === null) {
+            throw new Error(`cannot edit a text node without text?`);
+        }
+        onEdit(new EditValue(literal.id, text));
     }, true);
 
     return e('p', ['child', 'value'], content);

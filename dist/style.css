@@ -4,7 +4,7 @@ body {
 }
 
 :root {
-  --group-colour: tomato;
+  --group-colour: limegreen;
   --dom-colour: dodgerblue;
   --literal-colour: palevioletred;
 }
@@ -61,8 +61,6 @@ body {
   margin-bottom: 0.4em;
 }
 #source > .group > .name:before {
-  color: var(--group-colour);
-  content: "▲ ";
 }
 #source .children {
   margin-left: 2ch;
@@ -74,8 +72,12 @@ body {
 #source .child:before {
   display: block;
   content: "↳";
-  opacity: 0.5;
+  opacity: 1;
   margin-right: 1ch;
+}
+#source .name:hover {
+  cursor: pointer;
+  text-decoration: underline;
 }
 #source .child > .name {
   color: #666;
@@ -107,8 +109,15 @@ body {
 
 #source .child.group:before {
   color: var(--group-colour);
-  content: "▷";
-  opacity: 1;
+}
+
+#source .child.group > .name:before {
+  color: var(--group-colour);
+  content: "◖";
+}
+#source .child.group > .name:after {
+  color: var(--group-colour);
+  content: "◗";
 }
 
 #source .child.value:before {
@@ -133,4 +142,7 @@ body {
 
 .hovering {
   background: yellow;
+}
+.selecting {
+  background: cyan;
 }

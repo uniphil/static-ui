@@ -136,6 +136,14 @@ define("edit", ["require", "exports"], function (require, exports) {
         return EditHover;
     }());
     exports.EditHover = EditHover;
+    var EditSelect = (function () {
+        function EditSelect(node) {
+            this.editType = 'select';
+            this.node = node;
+        }
+        return EditSelect;
+    }());
+    exports.EditSelect = EditSelect;
     var EditValue = (function () {
         function EditValue(id, newValue) {
             this.editType = 'value';
@@ -188,13 +196,6 @@ define("edit", ["require", "exports"], function (require, exports) {
         var literal = value.value;
         var content = e('span', ['literal', 'string'], "" + literal.value);
         content.setAttribute('contenteditable', 'true');
-        content.addEventListener('input', function (e) {
-            var text = e.target.textContent;
-            if (text === null) {
-                throw new Error("cannot edit a text node without text?");
-            }
-            onEdit(new EditValue(literal.id, text));
-        }, true);
         content.addEventListener('mouseover', function (e) {
             e.preventDefault();
             onEdit(new EditHover(value));
@@ -202,6 +203,17 @@ define("edit", ["require", "exports"], function (require, exports) {
         content.addEventListener('mouseout', function (e) {
             e.preventDefault();
             onEdit(new EditHover());
+        }, true);
+        content.addEventListener('click', function (e) {
+            e.preventDefault();
+            onEdit(new EditSelect(value));
+        }, true);
+        content.addEventListener('input', function (e) {
+            var text = e.target.textContent;
+            if (text === null) {
+                throw new Error("cannot edit a text node without text?");
+            }
+            onEdit(new EditValue(literal.id, text));
         }, true);
         return e('p', ['child', 'value'], content);
     }
@@ -326,15 +338,31 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         return preview.querySelectorAll(q);
     }
     function editHover(state, edit) {
-        var nextState = state.hover(edit.node === undefined ? undefined : edit.node.id);
+        var id = edit.node === undefined ? undefined : edit.node.id;
+        var nextState = state.hover(id);
         var hovered = state.preview.querySelectorAll('.hovering');
         Array.prototype.forEach.call(hovered, function (el) {
             return el.classList.remove('hovering');
         });
-        if (edit.node && edit.node.id) {
+        if (edit.node) {
             var els = selectPreviewAll(state.preview, edit.node);
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('hovering');
+            });
+        }
+        return nextState;
+    }
+    function editSelect(state, edit) {
+        var id = edit.node === undefined ? undefined : edit.node.id;
+        var nextState = state.select(id);
+        var selected = state.preview.querySelectorAll('.selecting');
+        Array.prototype.forEach.call(selected, function (el) {
+            return el.classList.remove('selecting');
+        });
+        if (edit.node) {
+            var els = selectPreviewAll(state.preview, edit.node);
+            Array.prototype.forEach.call(els, function (el) {
+                return el.classList.add('selecting');
             });
         }
         return nextState;
@@ -375,6 +403,7 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         switch (edit.editType) {
             case 'init': return refresh(state, onEdit);
             case 'hover': return editHover(state, edit);
+            case 'select': return editSelect(state, edit);
             case 'value': return editValue(state, edit);
         }
     }

@@ -10,6 +10,7 @@ import {
     render as renderEditor,
     Edit,
     EditHover,
+    EditSelect,
     EditValue,
     OnEdit,
 } from './edit';
@@ -40,16 +41,35 @@ function selectPreviewAll(preview: HTMLElement, node: Group | UiNode) {
 
 
 function editHover(state: State, edit: EditHover): State {
-    const nextState = state.hover(edit.node === undefined ? undefined : edit.node.id);
+    const id = edit.node === undefined ? undefined : edit.node.id;
+    const nextState = state.hover(id);
 
     const hovered = state.preview.querySelectorAll('.hovering');
     Array.prototype.forEach.call(hovered, (el: HTMLElement) =>
         el.classList.remove('hovering'));
 
-    if (edit.node && edit.node.id) {
+    if (edit.node) {
         const els = selectPreviewAll(state.preview, edit.node);
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('hovering'));
+    }
+
+    return nextState;
+}
+
+
+function editSelect(state: State, edit: EditSelect): State {
+    const id = edit.node === undefined ? undefined : edit.node.id;
+    const nextState = state.select(id);
+
+    const selected = state.preview.querySelectorAll('.selecting');
+    Array.prototype.forEach.call(selected, (el: HTMLElement) =>
+        el.classList.remove('selecting'));
+
+    if (edit.node) {
+        const els = selectPreviewAll(state.preview, edit.node);
+        Array.prototype.forEach.call(els, (el: HTMLElement) =>
+            el.classList.add('selecting'));
     }
 
     return nextState;
@@ -97,8 +117,9 @@ function editValue(state: State, edit: EditValue): State {
 
 export default function transform(state: State, edit: Edit, onEdit: OnEdit): State {
     switch (edit.editType) {
-        case 'init': return refresh(state, onEdit);
-        case 'hover': return editHover(state, edit);
-        case 'value': return editValue(state, edit);
+        case 'init':   return refresh(state, onEdit);
+        case 'hover':  return editHover(state, edit);
+        case 'select': return editSelect(state, edit);
+        case 'value':  return editValue(state, edit);
     }
 }
