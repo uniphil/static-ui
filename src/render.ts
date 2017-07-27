@@ -40,6 +40,8 @@ function renderGroup(group: Group, context: Context, groups: GroupMap) {
 
 function renderDomNode(domNode: DomNode, context: Context, groups: GroupMap): HTMLElement {
     const el = document.createElement(domNode.name);
+    el.id = `preview-${domNode.id}`;
+
     const childContext = {
         ...context,
         children: domNode.children,

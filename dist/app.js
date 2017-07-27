@@ -127,6 +127,14 @@ define("edit", ["require", "exports"], function (require, exports) {
         return EditInit;
     }());
     exports.EditInit = EditInit;
+    var EditHover = (function () {
+        function EditHover(id) {
+            this.editType = 'hover';
+            this.id = id;
+        }
+        return EditHover;
+    }());
+    exports.EditHover = EditHover;
     var EditValue = (function () {
         function EditValue(id, newValue) {
             this.editType = 'value';
@@ -153,6 +161,14 @@ define("edit", ["require", "exports"], function (require, exports) {
     }
     function editDomNode(dom, onEdit) {
         var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return editChild(child, onEdit); }))));
+        el.addEventListener('mouseover', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover(dom.id));
+        }, true);
+        el.addEventListener('mouseout', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover());
+        }, true);
         return el;
     }
     function editGroupNode(group, _onEdit) {
@@ -169,7 +185,15 @@ define("edit", ["require", "exports"], function (require, exports) {
                 throw new Error("cannot edit a text node without text?");
             }
             onEdit(new EditValue(literal.id, text));
-        });
+        }, true);
+        content.addEventListener('mouseover', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover(literal.id));
+        }, true);
+        content.addEventListener('mouseout', function (e) {
+            e.preventDefault();
+            onEdit(new EditHover());
+        }, true);
         return e('p', ['child', 'value'], content);
     }
     function editChild(child, onEdit) {
@@ -216,6 +240,7 @@ define("render", ["require", "exports"], function (require, exports) {
     }
     function renderDomNode(domNode, context, groups) {
         var el = document.createElement(domNode.name);
+        el.id = "preview-" + domNode.id;
         var childContext = __assign({}, context, { children: domNode.children });
         domNode.children.forEach(function (child) {
             return renderChild(child, childContext, groups).forEach(function (childEl) {
@@ -259,6 +284,21 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         render_1.default(state.preview, state, onEdit);
         return state;
     }
+    function editHover(state, edit) {
+        var nextState = state.hover(edit.id);
+        var hovered = state.preview.querySelectorAll('.hovering');
+        Array.prototype.forEach.call(hovered, function (el) {
+            return el.classList.remove('hovering');
+        });
+        if (edit.id) {
+            var el = document.getElementById("preview-" + edit.id);
+            if (el === null) {
+                throw new Error("could not find blah " + edit.id);
+            }
+            el.classList.add('hovering');
+        }
+        return nextState;
+    }
     function editValue(state, edit) {
         var App = state.groups.App;
         function editNode(node) {
@@ -294,6 +334,7 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
     function transform(state, edit, onEdit) {
         switch (edit.editType) {
             case 'init': return refresh(state, onEdit);
+            case 'hover': return editHover(state, edit);
             case 'value': return editValue(state, edit);
         }
     }

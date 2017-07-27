@@ -130,3 +130,7 @@ body {
   color: var(--literal-colour);
   content: "\"";
 }
+
+.hovering {
+  background: yellow;
+}

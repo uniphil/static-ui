@@ -9,11 +9,21 @@ import {
 import State from './state';
 
 
-export type Edit = EditInit | EditValue;
+export type Edit = EditInit | EditHover | EditValue;
 
 
 export class EditInit {
     readonly editType = 'init';
+}
+
+
+export class EditHover {
+    readonly editType = 'hover';
+    readonly id?: string;
+
+    constructor(id?: string) {
+        this.id = id;
+    }
 }
 
 
@@ -49,6 +59,16 @@ function editDomNode(dom: DomNode, onEdit: OnEdit) {
         e('h4', ['name'], dom.name),
         e('div', ['children'],
             ...dom.children.map(child => editChild(child, onEdit))));
+
+    el.addEventListener('mouseover', (e) => {
+        e.preventDefault();
+        onEdit(new EditHover(dom.id));
+    }, true);
+    el.addEventListener('mouseout', (e) => {
+        e.preventDefault();
+        onEdit(new EditHover());
+    }, true);
+
     return el;
 }
 
@@ -64,13 +84,24 @@ function editValueNode(value: Value, onEdit: OnEdit) {
     const literal = value.value;
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
+
     content.addEventListener('input', e => {
         const text = (e.target as HTMLElement).textContent;
         if (text === null) {
             throw new Error(`cannot edit a text node without text?`);
         }
         onEdit(new EditValue(literal.id, text));
-    });
+    }, true);
+
+    content.addEventListener('mouseover', (e) => {
+        e.preventDefault();
+        onEdit(new EditHover(literal.id));
+    }, true);
+    content.addEventListener('mouseout', (e) => {
+        e.preventDefault();
+        onEdit(new EditHover());
+    }, true);
+
     return e('p', ['child', 'value'], content);
 }
 

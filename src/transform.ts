@@ -8,6 +8,7 @@ import {
 import {
     render as renderEditor,
     Edit,
+    EditHover,
     EditValue,
     OnEdit,
 } from './edit';
@@ -18,6 +19,24 @@ function refresh(state: State, onEdit: OnEdit): State {
     renderEditor(state.editor, state, onEdit);
     renderPreview(state.preview, state, onEdit);
     return state;
+}
+
+
+function editHover(state: State, edit: EditHover): State {
+    const nextState = state.hover(edit.id);
+
+    const hovered = state.preview.querySelectorAll('.hovering');
+    Array.prototype.forEach.call(hovered, (el: HTMLElement) =>
+        el.classList.remove('hovering'));
+
+    if (edit.id) {
+        const el = document.getElementById(`preview-${edit.id}`);
+        if (el === null) {
+            throw new Error(`could not find blah ${edit.id}`);
+        }
+        el.classList.add('hovering');
+    }
+    return nextState;
 }
 
 
@@ -63,6 +82,7 @@ function editValue(state: State, edit: EditValue): State {
 export default function transform(state: State, edit: Edit, onEdit: OnEdit): State {
     switch (edit.editType) {
         case 'init': return refresh(state, onEdit);
+        case 'hover': return editHover(state, edit);
         case 'value': return editValue(state, edit);
     }
 }
