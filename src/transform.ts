@@ -48,13 +48,21 @@ function editValue(state: State, edit: EditValue): State {
         return g;
     }, { App });
 
-    return state.change(newGroups);
+    const nextState = state.change(newGroups);
+
+    const el = document.getElementById(`preview-${edit.id}`);
+    if (el === null) {
+        throw new Error(`missing node to edit: ${edit.id}`);
+    }
+    el.textContent = edit.newValue;
+
+    return nextState;
 }
 
 
 export default function transform(state: State, edit: Edit, onEdit: OnEdit): State {
     switch (edit.editType) {
         case 'init': return refresh(state, onEdit);
-        case 'change-value': return editValue(state, edit);
+        case 'value': return editValue(state, edit);
     }
 }

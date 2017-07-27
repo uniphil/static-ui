@@ -18,7 +18,7 @@ export class EditInit {
 
 
 export class EditValue {
-    readonly editType = 'change-value';
+    readonly editType = 'value';
     readonly id: string;
     readonly newValue: string;
 
@@ -69,7 +69,7 @@ function editValueNode(value: Value, onEdit: OnEdit) {
         if (text === null) {
             throw new Error(`cannot edit a text node without text?`);
         }
-        onEdit(new EditValue(value.id, text));
+        onEdit(new EditValue(literal.id, text));
     });
     return e('p', ['child', 'value'], content);
 }
@@ -84,7 +84,7 @@ function editChild(child: UiNode, onEdit: OnEdit) {
 }
 
 
-function editGroup(group: Group, onEdit: OnEdit): HTMLElement {
+function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
     const el = e('div', ['group'],
         e('h3', ['name'], group.name),
         e('div', ['children'],
@@ -97,7 +97,7 @@ export function render(el: HTMLElement, state: State, onEdit: OnEdit) {
     el.innerHTML = '';
     Object.keys(state.groups)
         .map((name: string) =>
-            editGroup(state.groups[name], onEdit))
+            renderGroup(state.groups[name], onEdit))
         .forEach(childEl =>
             el.appendChild(childEl));
 }

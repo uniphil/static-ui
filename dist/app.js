@@ -129,7 +129,7 @@ define("edit", ["require", "exports"], function (require, exports) {
     exports.EditInit = EditInit;
     var EditValue = (function () {
         function EditValue(id, newValue) {
-            this.editType = 'change-value';
+            this.editType = 'value';
             this.id = id;
             this.newValue = newValue;
         }
@@ -168,7 +168,7 @@ define("edit", ["require", "exports"], function (require, exports) {
             if (text === null) {
                 throw new Error("cannot edit a text node without text?");
             }
-            onEdit(new EditValue(value.id, text));
+            onEdit(new EditValue(literal.id, text));
         });
         return e('p', ['child', 'value'], content);
     }
@@ -179,7 +179,7 @@ define("edit", ["require", "exports"], function (require, exports) {
             case "value": return editValueNode(child, onEdit);
         }
     }
-    function editGroup(group, onEdit) {
+    function renderGroup(group, onEdit) {
         var el = e('div', ['group'], e('h3', ['name'], group.name), e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return editChild(child, onEdit); }))));
         return el;
     }
@@ -187,7 +187,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         el.innerHTML = '';
         Object.keys(state.groups)
             .map(function (name) {
-            return editGroup(state.groups[name], onEdit);
+            return renderGroup(state.groups[name], onEdit);
         })
             .forEach(function (childEl) {
             return el.appendChild(childEl);
@@ -283,12 +283,18 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
             g[k] = group.replaceChildren(children);
             return g;
         }, { App: App });
-        return state.change(newGroups);
+        var nextState = state.change(newGroups);
+        var el = document.getElementById("preview-" + edit.id);
+        if (el === null) {
+            throw new Error("missing node to edit: " + edit.id);
+        }
+        el.textContent = edit.newValue;
+        return nextState;
     }
     function transform(state, edit, onEdit) {
         switch (edit.editType) {
             case 'init': return refresh(state, onEdit);
-            case 'change-value': return editValue(state, edit);
+            case 'value': return editValue(state, edit);
         }
     }
     exports.default = transform;
