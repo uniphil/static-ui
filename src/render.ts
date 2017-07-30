@@ -31,7 +31,7 @@ function renderGroupNode(groupNode: GroupNode, context: Context, groups: GroupMa
     const childEls = renderGroup(group, childContext, groups);
 
     childEls.forEach(el => {
-        el.setAttribute(`data-${groupNode.id}`, 'ya');
+        el.setAttribute(`data-${groupNode.id}`, 'preview');
     });
 
     return childEls;
@@ -43,7 +43,7 @@ function renderGroup(group: Group, context: Context, groups: GroupMap) {
         renderChild(child, context, groups), group.children);
 
     childEls.forEach(el => {
-        el.setAttribute(`data-${group.id}`, 'ya');
+        el.setAttribute(`data-${group.id}`, 'preview');
     });
 
     return childEls;

@@ -6,7 +6,7 @@ import {
     UiNode,
     Value,
 } from './ast';
-
+import e from './e';
 import State from './state';
 
 
@@ -56,18 +56,6 @@ export class EditValue {
 export type OnEdit = ((payload: Edit) => void);
 
 
-function e(name: string, classes: Array<string>,
-           ...children: Array<HTMLElement | string>) {
-    const el = document.createElement(name);
-    el.classList.add(...classes);
-    children.forEach((child: HTMLElement | string) =>
-        typeof child === 'string'
-            ? el.appendChild(document.createTextNode(child))
-            : el.appendChild(child));
-    return el;
-}
-
-
 function renderDomNode(dom: DomNode, onEdit: OnEdit) {
     const el = e('div', ['child', 'dom'],
         e('h4', ['name'], dom.name),
@@ -81,9 +69,10 @@ function renderDomNode(dom: DomNode, onEdit: OnEdit) {
         onEdit(new EditHover());
     }, true);
 
-    el.addEventListener('click', _e => {
+    el.addEventListener('click', e => {
         onEdit(new EditSelect(dom));
-    }, true);
+        e.stopPropagation();
+    }, false);
 
     el.id = `editor-${dom.id}`;
     return el;
@@ -191,4 +180,5 @@ export function render(el: HTMLElement, state: State, onEdit: OnEdit) {
             renderGroup(state.groups[name], onEdit))
         .forEach(childEl =>
             el.appendChild(childEl));
+    el.appendChild(e('div', ['floating-edit-options', 'off']))
 }

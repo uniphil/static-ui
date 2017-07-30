@@ -17,10 +17,12 @@ body {
 
 .view {
   flex: 1 1;
+  position: relative;
 }
 
 #source {
   font-family: monospace;
+  line-height: 1.5em;
   overflow: auto;
   padding: 0.25rem 0 0.25rem 0.25rem;
 }
@@ -39,6 +41,7 @@ body {
 
 #source h3,
 #source h4,
+#source h5,
 #source p {
   font: inherit;
   margin: 0;
@@ -68,7 +71,6 @@ body {
 #source .child {
   align-items: flex-start;
   display: flex;
-  margin-bottom: 0.4em;
 }
 #source .child:before {
   display: block;
@@ -139,6 +141,30 @@ body {
 #source .literal.string:after {
   color: var(--literal-colour);
   content: "\"";
+}
+
+#source .floating-edit-options {
+  background: hsla(0, 0%, 0%, 0.8);
+  border-radius: 2px;
+  color: #fff;
+  line-height: 1.5em;
+  padding: 0.25em 0.5ch;
+  position: absolute;
+}
+#source .floating-edit-options.off {
+  display: none;
+}
+
+#source small {
+  font: inherit;
+  opacity: 0.667;
+}
+
+#source button {
+  border-width: 0;
+  font: inherit;
+  margin-right: 1ch;
+  padding: 0 1ch;
 }
 
 .hovering {

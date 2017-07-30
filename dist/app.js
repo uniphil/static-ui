@@ -91,6 +91,26 @@ define("ast", ["require", "exports"], function (require, exports) {
     }());
     exports.Literal = Literal;
 });
+define("e", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function e(name, classes) {
+        var children = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            children[_i - 2] = arguments[_i];
+        }
+        var el = document.createElement(name);
+        (_a = el.classList).add.apply(_a, classes);
+        children.forEach(function (child) {
+            return typeof child === 'string'
+                ? el.appendChild(document.createTextNode(child))
+                : el.appendChild(child);
+        });
+        return el;
+        var _a;
+    }
+    exports.default = e;
+});
 define("state", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -118,7 +138,7 @@ define("state", ["require", "exports"], function (require, exports) {
     }());
     exports.default = State;
 });
-define("edit", ["require", "exports"], function (require, exports) {
+define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var EditInit = (function () {
@@ -153,37 +173,23 @@ define("edit", ["require", "exports"], function (require, exports) {
         return EditValue;
     }());
     exports.EditValue = EditValue;
-    function e(name, classes) {
-        var children = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            children[_i - 2] = arguments[_i];
-        }
-        var el = document.createElement(name);
-        (_a = el.classList).add.apply(_a, classes);
-        children.forEach(function (child) {
-            return typeof child === 'string'
-                ? el.appendChild(document.createTextNode(child))
-                : el.appendChild(child);
-        });
-        return el;
-        var _a;
-    }
     function renderDomNode(dom, onEdit) {
-        var el = e('div', ['child', 'dom'], e('h4', ['name'], dom.name), e.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return renderChild(child, onEdit); }))));
+        var el = e_1.default('div', ['child', 'dom'], e_1.default('h4', ['name'], dom.name), e_1.default.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return renderChild(child, onEdit); }))));
         el.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(dom));
         }, true);
         el.addEventListener('mouseout', function (_e) {
             onEdit(new EditHover());
         }, true);
-        el.addEventListener('click', function (_e) {
+        el.addEventListener('click', function (e) {
             onEdit(new EditSelect(dom));
-        }, true);
+            e.stopPropagation();
+        }, false);
         el.id = "editor-" + dom.id;
         return el;
     }
     function renderGroupNode(group, onEdit) {
-        var el = e('div', ['child', 'group'], e('h4', ['name'], group.name));
+        var el = e_1.default('div', ['child', 'group'], e_1.default('h4', ['name'], group.name));
         el.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(group));
         }, true);
@@ -198,7 +204,7 @@ define("edit", ["require", "exports"], function (require, exports) {
     }
     function renderValueNode(value, onEdit) {
         var literal = value.value;
-        var content = e('span', ['literal', 'string'], "" + literal.value);
+        var content = e_1.default('span', ['literal', 'string'], "" + literal.value);
         content.setAttribute('contenteditable', 'true');
         content.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(value));
@@ -226,7 +232,7 @@ define("edit", ["require", "exports"], function (require, exports) {
             }
             onEdit(new EditValue(literal.id, text));
         }, true);
-        var el = e('p', ['child', 'value'], content);
+        var el = e_1.default('p', ['child', 'value'], content);
         el.id = "editor-" + value.id;
         return el;
     }
@@ -238,7 +244,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         }
     }
     function renderGroup(group, onEdit) {
-        var name = e('h3', ['name'], group.name);
+        var name = e_1.default('h3', ['name'], group.name);
         name.addEventListener('mouseover', function (_e) {
             onEdit(new EditHover(group));
         }, true);
@@ -248,7 +254,7 @@ define("edit", ["require", "exports"], function (require, exports) {
         name.addEventListener('click', function (_e) {
             onEdit(new EditSelect(group));
         }, true);
-        var el = e('div', ['group'], name, e.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return renderChild(child, onEdit); }))));
+        var el = e_1.default('div', ['group'], name, e_1.default.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return renderChild(child, onEdit); }))));
         el.id = "editor-" + group.id;
         return el;
     }
@@ -261,6 +267,7 @@ define("edit", ["require", "exports"], function (require, exports) {
             .forEach(function (childEl) {
             return el.appendChild(childEl);
         });
+        el.appendChild(e_1.default('div', ['floating-edit-options', 'off']));
     }
     exports.render = render;
 });
@@ -280,7 +287,7 @@ define("render", ["require", "exports"], function (require, exports) {
         var childContext = __assign({}, context, { children: groupNode.children });
         var childEls = renderGroup(group, childContext, groups);
         childEls.forEach(function (el) {
-            el.setAttribute("data-" + groupNode.id, 'ya');
+            el.setAttribute("data-" + groupNode.id, 'preview');
         });
         return childEls;
     }
@@ -289,7 +296,7 @@ define("render", ["require", "exports"], function (require, exports) {
             return renderChild(child, context, groups);
         }, group.children);
         childEls.forEach(function (el) {
-            el.setAttribute("data-" + group.id, 'ya');
+            el.setAttribute("data-" + group.id, 'preview');
         });
         return childEls;
     }
@@ -331,7 +338,7 @@ define("render", ["require", "exports"], function (require, exports) {
     }
     exports.default = render;
 });
-define("transform", ["require", "exports", "ast", "edit", "render"], function (require, exports, ast_1, edit_1, render_1) {
+define("transform", ["require", "exports", "ast", "edit", "e", "render"], function (require, exports, ast_1, edit_1, e_2, render_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function refresh(state, onEdit) {
@@ -339,13 +346,42 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         render_1.default(state.preview, state, onEdit);
         return state;
     }
-    function selectNode(node) {
+    function editorQuery(node) {
+        return "#editor-" + node.id;
+    }
+    function previewQuery(node) {
         switch (node.type) {
             case 'group-definition': return "[data-" + node.id + "]";
             case 'group': return "[data-" + node.id + "]";
             case 'dom': return "#preview-" + node.id;
             case 'value': return "#preview-" + node.value.id;
         }
+    }
+    function popup(tag, target, context) {
+        if (context === void 0) { context = document.body; }
+        var ctxRect = context.getBoundingClientRect();
+        var targetRect = target.getBoundingClientRect();
+        tag.classList.remove('off');
+        tag.style.left = "calc(0.5ch + " + (targetRect.left - ctxRect.left) + "px)";
+        tag.style.top = targetRect.top + targetRect.height - ctxRect.top + "px";
+    }
+    function popoff(pane) {
+        var options = pane.querySelector('.floating-edit-options');
+        if (options === null) {
+            throw new Error('missing editor options');
+        }
+        options.innerHTML = '';
+        options.classList.add('off');
+    }
+    function showDomOptions(pane, anchor, node) {
+        var options = pane.querySelector('.floating-edit-options');
+        if (options === null) {
+            throw new Error('missing editor options');
+        }
+        popup(options, anchor, pane);
+        [e_2.default('h5', [], 'DOM Node ', e_2.default('small', [], node.name)),
+            e_2.default('p', [], e_2.default('button', [], '× delete'), e_2.default('button', [], '+ child')),
+        ].forEach(function (child) { return options.appendChild(child); });
     }
     function editHover(state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
@@ -355,7 +391,7 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
             return el.classList.remove('hovering');
         });
         if (edit.node) {
-            var els = state.preview.querySelectorAll(selectNode(edit.node));
+            var els = state.preview.querySelectorAll(previewQuery(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('hovering');
             });
@@ -365,15 +401,24 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
     function editSelect(state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
         var nextState = state.select(id);
+        popoff(state.editor);
         var selected = state.preview.querySelectorAll('.selecting');
         Array.prototype.forEach.call(selected, function (el) {
             return el.classList.remove('selecting');
         });
         if (edit.node) {
-            var els = state.preview.querySelectorAll(selectNode(edit.node));
+            var els = state.preview.querySelectorAll(previewQuery(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('selecting');
             });
+            if (edit.node.type === 'dom') {
+                var q = editorQuery(edit.node) + " > .name";
+                var nameEl = state.editor.querySelector(q);
+                if (nameEl === null) {
+                    throw new Error("missing element " + q);
+                }
+                showDomOptions(state.editor, nameEl, edit.node);
+            }
         }
         return nextState;
     }
