@@ -162,6 +162,7 @@ body {
 
 #source button {
   border-width: 0;
+  cursor: pointer;
   font: inherit;
   margin-right: 1ch;
   padding: 0 1ch;

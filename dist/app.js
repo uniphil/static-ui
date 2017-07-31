@@ -188,6 +188,16 @@ define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
         el.id = "editor-" + dom.id;
         return el;
     }
+    function showDomOptions(pane, anchor, node) {
+        var options = pane.querySelector('.floating-edit-options');
+        if (options === null) {
+            throw new Error('missing editor options');
+        }
+        popup(options, anchor, pane);
+        [e_1.default('h5', [], 'DOM Node ', e_1.default('small', [], node.name)),
+            e_1.default('p', [], e_1.default('button', [], '× delete'), e_1.default('button', [], '+ child'), e_1.default('button', [], '▢ group')),
+        ].forEach(function (child) { return options.appendChild(child); });
+    }
     function renderGroupNode(group, onEdit) {
         var el = e_1.default('div', ['child', 'group'], e_1.default('h4', ['name'], group.name));
         el.addEventListener('mouseover', function (_e) {
@@ -270,6 +280,37 @@ define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
         el.appendChild(e_1.default('div', ['floating-edit-options', 'off']));
     }
     exports.render = render;
+    function editorQuery(node) {
+        return "#editor-" + node.id;
+    }
+    function popup(tag, target, context) {
+        if (context === void 0) { context = document.body; }
+        var ctxRect = context.getBoundingClientRect();
+        var targetRect = target.getBoundingClientRect();
+        tag.classList.remove('off');
+        tag.style.left = "calc(0.5ch + " + (targetRect.left - ctxRect.left) + "px)";
+        tag.style.top = targetRect.top + targetRect.height - ctxRect.top + "px";
+    }
+    function popoff(pane) {
+        var options = pane.querySelector('.floating-edit-options');
+        if (options === null) {
+            throw new Error('missing editor options');
+        }
+        options.innerHTML = '';
+        options.classList.add('off');
+    }
+    function renderOptions(pane, node) {
+        popoff(pane);
+        if (node.type === 'dom') {
+            var q = editorQuery(node) + " > .name";
+            var nameEl = pane.querySelector(q);
+            if (nameEl === null) {
+                throw new Error("missing element " + q);
+            }
+            showDomOptions(pane, nameEl, node);
+        }
+    }
+    exports.renderOptions = renderOptions;
 });
 define("render", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -338,16 +379,13 @@ define("render", ["require", "exports"], function (require, exports) {
     }
     exports.default = render;
 });
-define("transform", ["require", "exports", "ast", "edit", "e", "render"], function (require, exports, ast_1, edit_1, e_2, render_1) {
+define("transform", ["require", "exports", "ast", "edit", "render"], function (require, exports, ast_1, edit_1, render_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function refresh(state, onEdit) {
         edit_1.render(state.editor, state, onEdit);
         render_1.default(state.preview, state, onEdit);
         return state;
-    }
-    function editorQuery(node) {
-        return "#editor-" + node.id;
     }
     function previewQuery(node) {
         switch (node.type) {
@@ -356,32 +394,6 @@ define("transform", ["require", "exports", "ast", "edit", "e", "render"], functi
             case 'dom': return "#preview-" + node.id;
             case 'value': return "#preview-" + node.value.id;
         }
-    }
-    function popup(tag, target, context) {
-        if (context === void 0) { context = document.body; }
-        var ctxRect = context.getBoundingClientRect();
-        var targetRect = target.getBoundingClientRect();
-        tag.classList.remove('off');
-        tag.style.left = "calc(0.5ch + " + (targetRect.left - ctxRect.left) + "px)";
-        tag.style.top = targetRect.top + targetRect.height - ctxRect.top + "px";
-    }
-    function popoff(pane) {
-        var options = pane.querySelector('.floating-edit-options');
-        if (options === null) {
-            throw new Error('missing editor options');
-        }
-        options.innerHTML = '';
-        options.classList.add('off');
-    }
-    function showDomOptions(pane, anchor, node) {
-        var options = pane.querySelector('.floating-edit-options');
-        if (options === null) {
-            throw new Error('missing editor options');
-        }
-        popup(options, anchor, pane);
-        [e_2.default('h5', [], 'DOM Node ', e_2.default('small', [], node.name)),
-            e_2.default('p', [], e_2.default('button', [], '× delete'), e_2.default('button', [], '+ child')),
-        ].forEach(function (child) { return options.appendChild(child); });
     }
     function editHover(state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
@@ -401,7 +413,6 @@ define("transform", ["require", "exports", "ast", "edit", "e", "render"], functi
     function editSelect(state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
         var nextState = state.select(id);
-        popoff(state.editor);
         var selected = state.preview.querySelectorAll('.selecting');
         Array.prototype.forEach.call(selected, function (el) {
             return el.classList.remove('selecting');
@@ -411,14 +422,7 @@ define("transform", ["require", "exports", "ast", "edit", "e", "render"], functi
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('selecting');
             });
-            if (edit.node.type === 'dom') {
-                var q = editorQuery(edit.node) + " > .name";
-                var nameEl = state.editor.querySelector(q);
-                if (nameEl === null) {
-                    throw new Error("missing element " + q);
-                }
-                showDomOptions(state.editor, nameEl, edit.node);
-            }
+            edit_1.renderOptions(state.editor, edit.node);
         }
         return nextState;
     }

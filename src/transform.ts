@@ -8,6 +8,7 @@ import {
 } from './ast';
 import {
     render as renderEditor,
+    renderOptions,
     Edit,
     EditHover,
     EditSelect,
@@ -25,11 +26,6 @@ function refresh(state: State, onEdit: OnEdit): State {
 }
 
 
-function editorQuery(node: Node) {
-    return `#editor-${node.id}`;
-}
-
-
 function previewQuery(node: Node) {
     switch (node.type) {
         case 'group-definition': return `[data-${node.id}]`;
@@ -37,47 +33,6 @@ function previewQuery(node: Node) {
         case 'dom':   return `#preview-${node.id}`;
         case 'value': return `#preview-${node.value.id}`;
     }
-}
-
-
-function popup(tag: HTMLElement, target: HTMLElement,
-               context: HTMLElement = document.body) {
-    const ctxRect = context.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    tag.classList.remove('off');
-    tag.style.left = `calc(0.5ch + ${targetRect.left - ctxRect.left}px)`;
-    tag.style.top = `${targetRect.top + targetRect.height - ctxRect.top}px`;
-}
-
-
-function popoff(pane: HTMLElement) {
-    const options = pane.querySelector('.floating-edit-options') as HTMLElement;
-    if (options === null) {
-        throw new Error('missing editor options');
-    }
-    options.innerHTML = '';
-    options.classList.add('off');
-}
-
-
-function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode) {
-    const options = pane.querySelector('.floating-edit-options') as HTMLElement;
-    if (options === null) {
-        throw new Error('missing editor options');
-    }
-    popup(options, anchor, pane);
-
-    [   e('h5', [],
-            'DOM Node ',
-            e('small', [],
-                node.name)),
-        e('p', [],
-            e('button', [],
-                '× delete'),
-            e('button', [],
-                '+ child'),
-        ),
-    ].forEach(child => options.appendChild(child));
 }
 
 
@@ -103,8 +58,6 @@ function editSelect(state: State, edit: EditSelect): State {
     const id = edit.node === undefined ? undefined : edit.node.id;
     const nextState = state.select(id);
 
-    popoff(state.editor);
-
     const selected = state.preview.querySelectorAll('.selecting');
     Array.prototype.forEach.call(selected, (el: HTMLElement) =>
         el.classList.remove('selecting'));
@@ -114,14 +67,7 @@ function editSelect(state: State, edit: EditSelect): State {
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('selecting'));
 
-        if (edit.node.type === 'dom') {
-            const q = `${editorQuery(edit.node)} > .name`;
-            const nameEl = state.editor.querySelector(q);
-            if (nameEl === null) {
-                throw new Error(`missing element ${q}`);
-            }
-            showDomOptions(state.editor, nameEl as HTMLElement, edit.node);
-        }
+        renderOptions(state.editor, edit.node);
     }
 
     return nextState;

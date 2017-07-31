@@ -79,6 +79,29 @@ function renderDomNode(dom: DomNode, onEdit: OnEdit) {
 }
 
 
+function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode) {
+    const options = pane.querySelector('.floating-edit-options') as HTMLElement;
+    if (options === null) {
+        throw new Error('missing editor options');
+    }
+    popup(options, anchor, pane);
+
+    [   e('h5', [],
+            'DOM Node ',
+            e('small', [],
+                node.name)),
+        e('p', [],
+            e('button', [],
+                '× delete'),
+            e('button', [],
+                '+ child'),
+            e('button', [],
+                '▢ group'),
+        ),
+    ].forEach(child => options.appendChild(child));
+}
+
+
 function renderGroupNode(group: GroupNode, onEdit: OnEdit) {
     const el = e('div', ['child', 'group'],
         e('h4', ['name'], group.name));
@@ -181,4 +204,43 @@ export function render(el: HTMLElement, state: State, onEdit: OnEdit) {
         .forEach(childEl =>
             el.appendChild(childEl));
     el.appendChild(e('div', ['floating-edit-options', 'off']))
+}
+
+
+function editorQuery(node: Node) {
+    return `#editor-${node.id}`;
+}
+
+
+function popup(tag: HTMLElement, target: HTMLElement,
+               context: HTMLElement = document.body) {
+    const ctxRect = context.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    tag.classList.remove('off');
+    tag.style.left = `calc(0.5ch + ${targetRect.left - ctxRect.left}px)`;
+    tag.style.top = `${targetRect.top + targetRect.height - ctxRect.top}px`;
+}
+
+
+function popoff(pane: HTMLElement) {
+    const options = pane.querySelector('.floating-edit-options') as HTMLElement;
+    if (options === null) {
+        throw new Error('missing editor options');
+    }
+    options.innerHTML = '';
+    options.classList.add('off');
+}
+
+
+export function renderOptions(pane: HTMLElement, node: Node) {
+    popoff(pane);
+
+    if (node.type === 'dom') {
+        const q = `${editorQuery(node)} > .name`;
+        const nameEl = pane.querySelector(q);
+        if (nameEl === null) {
+            throw new Error(`missing element ${q}`);
+        }
+        showDomOptions(pane, nameEl as HTMLElement, node);
+    }
 }
