@@ -7,7 +7,9 @@ import {
     Value,
 } from './state/ast';
 import {
-    EditHover
+    EditHover,
+    EditSelect,
+    ValueSelection,
 } from './state/content';
 import e from './e';
 import State, {
@@ -15,11 +17,11 @@ import State, {
 } from './state';
 
 
-function renderDomNode(dom: DomNode, onEdit: OnEdit) {
+function renderDomNode(dom: DomNode, onEdit: OnEdit, state: State) {
     const el = e('div', ['child', 'dom'],
         e('h4', ['name'], dom.name),
         e('div', ['children'],
-            ...dom.children.map(child => renderChild(child, onEdit))));
+            ...dom.children.map(child => renderChild(child, onEdit, state))));
 
     el.addEventListener('mouseover', _e => {
         onEdit(new EditHover(dom.id));
@@ -89,10 +91,14 @@ function renderGroupNode(group: GroupNode, onEdit: OnEdit) {
 }
 
 
-function renderValueNode(value: Value, onEdit: OnEdit) {
+function renderValueNode(value: Value, onEdit: OnEdit, state: State) {
     const literal = value.value;
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
+
+    if (state.content.selection && state.content.selection.id === value.id) {
+        content.focus();
+    }
 
     content.addEventListener('mouseover', () => {
         onEdit(new EditHover(value.id));
@@ -101,14 +107,14 @@ function renderValueNode(value: Value, onEdit: OnEdit) {
         onEdit(new EditHover());
     }, true);
 
-    // const select: EventListener = _e => {
-    //     onEdit(new EditSelect(value));
-    // };
-    // content.addEventListener('click', select, true);
-    // content.addEventListener('focus', select, true);
-    // content.addEventListener('blur', _e => {
-    //     onEdit(new EditSelect());
-    // }, true);
+    const select: EventListener = () => {
+        onEdit(new EditSelect(new ValueSelection(value.id)));
+    };
+    content.addEventListener('click', select, true);
+    content.addEventListener('focus', select, true);
+    content.addEventListener('blur', () => {
+        onEdit(new EditSelect());
+    }, true);
 
     // content.addEventListener('keydown', e => {
     //     if (e.key === 'Escape') {
@@ -130,16 +136,16 @@ function renderValueNode(value: Value, onEdit: OnEdit) {
 }
 
 
-function renderChild(child: UiNode, onEdit: OnEdit) {
+function renderChild(child: UiNode, onEdit: OnEdit, state: State) {
     switch (child.type) {
-        case "dom":   return renderDomNode(child, onEdit);
+        case "dom":   return renderDomNode(child, onEdit, state);
         case "group": return renderGroupNode(child, onEdit);
-        case "value": return renderValueNode(child, onEdit);
+        case "value": return renderValueNode(child, onEdit, state);
     }
 }
 
 
-function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
+function renderGroup(group: Group, onEdit: OnEdit, state: State): HTMLElement {
     const name = e('h3', ['name'], group.name);
 
     name.addEventListener('mouseover', _e => {
@@ -156,7 +162,7 @@ function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
     const el = e('div', ['group'],
         name,
         e('div', ['children'],
-            ...group.children.map(child => renderChild(child, onEdit))));
+            ...group.children.map(child => renderChild(child, onEdit, state))));
 
     el.id = `editor-${group.id}`;
     return el;
@@ -204,7 +210,7 @@ export default function render(el: HTMLElement, state: State, onEdit: OnEdit) {
     el.innerHTML = '';
     Object.keys(state.ast)
         .map((name: string) =>
-            renderGroup(state.ast[name], onEdit))
+            renderGroup(state.ast[name], onEdit, state))
         .forEach(childEl =>
             el.appendChild(childEl));
     el.appendChild(e('div', ['floating-edit-options', 'off']))

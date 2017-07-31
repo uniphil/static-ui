@@ -11,7 +11,6 @@ import State from './state';
 import expect from './expect';
 import renderEditor from './editContent';
 import renderPreview from './preview';
-// import transform from './transform';
 
 
 const demoGroups: Ast = {

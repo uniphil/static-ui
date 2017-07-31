@@ -22,14 +22,27 @@ export default class Content {
         return new Content(edit.id, this.selection);
     }
 
-    select(_edit: EditSelect) {
-        return this;
+    select(edit: EditSelect) {
+        const nextSelection = edit.selection
+            ? new ValueSelection(edit.selection.id)
+            : undefined;
+
+        return new Content(this.hovering, nextSelection);
     }
 }
 
 
-class Selection {
+export class ValueSelection {
+    readonly type = 'value';
+    readonly id: string;
+
+    constructor(id: string) {
+        this.id = id;
+    }
 }
+
+
+type Selection = ValueSelection;
 
 
 export type Edit = EditHover
@@ -47,12 +60,12 @@ export class EditHover {
 }
 
 
-class EditSelect {
+export class EditSelect {
     readonly type = 'content';
     readonly edit = 'select';
-    readonly id?: string;
+    readonly selection?: Selection;
 
-    constructor(_id?: string) {
-        this.id = undefined;
+    constructor(selection?: Selection) {
+        this.selection = selection;
     }
 }

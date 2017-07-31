@@ -85,7 +85,9 @@ function renderDomNode(domNode: DomNode, context: Context, state: State): HTMLEl
 function renderValueNode(value: Value, state: State): HTMLElement {
     const el = document.createElement('span');
 
-    if (state.content.hovering === value.id) {
+    if (state.content.selection && state.content.selection.id === value.id) {
+        el.classList.add('selecting');
+    } else if (state.content.hovering === value.id) {
         el.classList.add('hovering');
     }
 

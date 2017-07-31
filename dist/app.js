@@ -233,17 +233,23 @@ define("state/content", ["require", "exports"], function (require, exports) {
         Content.prototype.hover = function (edit) {
             return new Content(edit.id, this.selection);
         };
-        Content.prototype.select = function (_edit) {
-            return this;
+        Content.prototype.select = function (edit) {
+            var nextSelection = edit.selection
+                ? new ValueSelection(edit.selection.id)
+                : undefined;
+            return new Content(this.hovering, nextSelection);
         };
         return Content;
     }());
     exports.default = Content;
-    var Selection = (function () {
-        function Selection() {
+    var ValueSelection = (function () {
+        function ValueSelection(id) {
+            this.type = 'value';
+            this.id = id;
         }
-        return Selection;
+        return ValueSelection;
     }());
+    exports.ValueSelection = ValueSelection;
     var EditHover = (function () {
         function EditHover(id) {
             this.type = 'content';
@@ -254,13 +260,14 @@ define("state/content", ["require", "exports"], function (require, exports) {
     }());
     exports.EditHover = EditHover;
     var EditSelect = (function () {
-        function EditSelect(_id) {
+        function EditSelect(selection) {
             this.type = 'content';
             this.edit = 'select';
-            this.id = undefined;
+            this.selection = selection;
         }
         return EditSelect;
     }());
+    exports.EditSelect = EditSelect;
 });
 define("state/index", ["require", "exports", "state/ast", "state/content"], function (require, exports, ast_1, content_1) {
     "use strict";
@@ -294,8 +301,8 @@ define("state/index", ["require", "exports", "state/ast", "state/content"], func
 define("editContent", ["require", "exports", "state/content", "e"], function (require, exports, content_2, e_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function renderDomNode(dom, onEdit) {
-        var el = e_1.default('div', ['child', 'dom'], e_1.default('h4', ['name'], dom.name), e_1.default.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return renderChild(child, onEdit); }))));
+    function renderDomNode(dom, onEdit, state) {
+        var el = e_1.default('div', ['child', 'dom'], e_1.default('h4', ['name'], dom.name), e_1.default.apply(void 0, ['div', ['children']].concat(dom.children.map(function (child) { return renderChild(child, onEdit, state); }))));
         el.addEventListener('mouseover', function (_e) {
             onEdit(new content_2.EditHover(dom.id));
         }, true);
@@ -340,24 +347,27 @@ define("editContent", ["require", "exports", "state/content", "e"], function (re
         el.id = "editor-" + group.id;
         return el;
     }
-    function renderValueNode(value, onEdit) {
+    function renderValueNode(value, onEdit, state) {
         var literal = value.value;
         var content = e_1.default('span', ['literal', 'string'], "" + literal.value);
         content.setAttribute('contenteditable', 'true');
+        if (state.content.selection && state.content.selection.id === value.id) {
+            content.focus();
+        }
         content.addEventListener('mouseover', function () {
             onEdit(new content_2.EditHover(value.id));
         }, true);
         content.addEventListener('mouseout', function () {
             onEdit(new content_2.EditHover());
         }, true);
-        // const select: EventListener = _e => {
-        //     onEdit(new EditSelect(value));
-        // };
-        // content.addEventListener('click', select, true);
-        // content.addEventListener('focus', select, true);
-        // content.addEventListener('blur', _e => {
-        //     onEdit(new EditSelect());
-        // }, true);
+        var select = function () {
+            onEdit(new content_2.EditSelect(new content_2.ValueSelection(value.id)));
+        };
+        content.addEventListener('click', select, true);
+        content.addEventListener('focus', select, true);
+        content.addEventListener('blur', function () {
+            onEdit(new content_2.EditSelect());
+        }, true);
         // content.addEventListener('keydown', e => {
         //     if (e.key === 'Escape') {
         //         (e.target as HTMLElement).blur();
@@ -374,14 +384,14 @@ define("editContent", ["require", "exports", "state/content", "e"], function (re
         el.id = "editor-" + value.id;
         return el;
     }
-    function renderChild(child, onEdit) {
+    function renderChild(child, onEdit, state) {
         switch (child.type) {
-            case "dom": return renderDomNode(child, onEdit);
+            case "dom": return renderDomNode(child, onEdit, state);
             case "group": return renderGroupNode(child, onEdit);
-            case "value": return renderValueNode(child, onEdit);
+            case "value": return renderValueNode(child, onEdit, state);
         }
     }
-    function renderGroup(group, onEdit) {
+    function renderGroup(group, onEdit, state) {
         var name = e_1.default('h3', ['name'], group.name);
         name.addEventListener('mouseover', function (_e) {
             onEdit(new content_2.EditHover(group.id));
@@ -392,7 +402,7 @@ define("editContent", ["require", "exports", "state/content", "e"], function (re
         // name.addEventListener('click', _e => {
         //     onEdit(new EditSelect(group));
         // }, true);
-        var el = e_1.default('div', ['group'], name, e_1.default.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return renderChild(child, onEdit); }))));
+        var el = e_1.default('div', ['group'], name, e_1.default.apply(void 0, ['div', ['children']].concat(group.children.map(function (child) { return renderChild(child, onEdit, state); }))));
         el.id = "editor-" + group.id;
         return el;
     }
@@ -431,7 +441,7 @@ define("editContent", ["require", "exports", "state/content", "e"], function (re
         el.innerHTML = '';
         Object.keys(state.ast)
             .map(function (name) {
-            return renderGroup(state.ast[name], onEdit);
+            return renderGroup(state.ast[name], onEdit, state);
         })
             .forEach(function (childEl) {
             return el.appendChild(childEl);
@@ -506,7 +516,10 @@ define("preview", ["require", "exports"], function (require, exports) {
     }
     function renderValueNode(value, state) {
         var el = document.createElement('span');
-        if (state.content.hovering === value.id) {
+        if (state.content.selection && state.content.selection.id === value.id) {
+            el.classList.add('selecting');
+        }
+        else if (state.content.hovering === value.id) {
             el.classList.add('hovering');
         }
         el.innerHTML = "" + value.value.value;
@@ -537,7 +550,6 @@ define("preview", ["require", "exports"], function (require, exports) {
 define("index", ["require", "exports", "state/ast", "state/index", "expect", "editContent", "preview"], function (require, exports, ast_2, state_1, expect_1, editContent_1, preview_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    // import transform from './transform';
     var demoGroups = {
         App: ast_2.Group.e('App', new ast_2.GroupNode('Header'), new ast_2.DomNode('div', new ast_2.DomNode('p', ast_2.Value.e('The application structure is on the left. Text can be '), new ast_2.DomNode('em', ast_2.Value.e('formatted')), ast_2.Value.e(' with HTML nodes.')), new ast_2.DomNode('p', ast_2.Value.e('HTML also means we can create '), new ast_2.DomNode('a', ast_2.Value.e('links')), ast_2.Value.e('!'))), new ast_2.GroupNode('Footer')),
         Header: ast_2.Group.e('Header', new ast_2.DomNode('div', new ast_2.DomNode('h1', ast_2.Value.e('Hello world!')), new ast_2.DomNode('h2', ast_2.Value.e('Welcome to static.')))),
