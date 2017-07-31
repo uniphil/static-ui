@@ -5,66 +5,14 @@ import {
     Node,
     UiNode,
     Value,
-} from './ast';
+} from './state/ast';
+import {
+    EditHover
+} from './state/content';
 import e from './e';
-import State from './state';
-
-
-export type Edit = EditDeleteDom
-                 | EditInit
-                 | EditHover
-                 | EditSelect
-                 | EditValue;
-
-
-export class EditDeleteDom {
-    readonly editType = 'delete-dom';
-    readonly node: Node;
-
-    constructor(node: Node) {
-        this.node = node;
-    }
-}
-
-
-export class EditInit {
-    readonly editType = 'init';
-}
-
-
-export class EditHover {
-    readonly editType = 'hover';
-    readonly node?: Node;
-
-    constructor(node?: Node) {
-        this.node = node;
-    }
-}
-
-
-export class EditSelect {
-    readonly editType = 'select';
-    readonly node?: Node;
-
-    constructor(node?: Node) {
-        this.node = node;
-    }
-}
-
-
-export class EditValue {
-    readonly editType = 'value';
-    readonly id: string;
-    readonly newValue: string;
-
-    constructor(id: string, newValue: string) {
-        this.id = id;
-        this.newValue = newValue;
-    }
-}
-
-
-export type OnEdit = ((payload: Edit) => void);
+import State, {
+    OnEdit,
+} from './state';
 
 
 function renderDomNode(dom: DomNode, onEdit: OnEdit) {
@@ -74,16 +22,16 @@ function renderDomNode(dom: DomNode, onEdit: OnEdit) {
             ...dom.children.map(child => renderChild(child, onEdit))));
 
     el.addEventListener('mouseover', _e => {
-        onEdit(new EditHover(dom));
+        onEdit(new EditHover(dom.id));
     }, true);
     el.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
-    el.addEventListener('click', e => {
-        onEdit(new EditSelect(dom));
-        e.stopPropagation();
-    }, false);
+    // el.addEventListener('click', e => {
+    //     onEdit(new EditSelect(dom));
+    //     e.stopPropagation();
+    // }, false);
 
     el.id = `editor-${dom.id}`;
     return el;
@@ -91,17 +39,17 @@ function renderDomNode(dom: DomNode, onEdit: OnEdit) {
 
 
 function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode,
-                        onEdit: OnEdit) {
+                        _onEdit: OnEdit) {
     const options = pane.querySelector('.floating-edit-options') as HTMLElement;
     if (options === null) {
         throw new Error('missing editor options');
     }
 
     const del = e('button', [], '× delete');
-    del.addEventListener('click', e => {
-        onEdit(new EditDeleteDom(node));
-        e.stopPropagation();
-    });
+    // del.addEventListener('click', e => {
+    //     onEdit(new EditDeleteDom(node));
+    //     e.stopPropagation();
+    // });
 
     const add = e('button', [], '+ child');
     const group = e('button', [], '◱ group');
@@ -126,15 +74,15 @@ function renderGroupNode(group: GroupNode, onEdit: OnEdit) {
         e('h4', ['name'], group.name));
 
     el.addEventListener('mouseover', _e => {
-        onEdit(new EditHover(group));
+        onEdit(new EditHover(group.id));
     }, true);
     el.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
-    el.addEventListener('click', _e => {
-        onEdit(new EditSelect(group));
-    }, true);
+    // el.addEventListener('click', _e => {
+    //     onEdit(new EditSelect(group));
+    // }, true);
 
     el.id = `editor-${group.id}`;
     return el;
@@ -146,35 +94,35 @@ function renderValueNode(value: Value, onEdit: OnEdit) {
     const content = e('span', ['literal', 'string'], `${literal.value}`);
     content.setAttribute('contenteditable', 'true');
 
-    content.addEventListener('mouseover', _e => {
-        onEdit(new EditHover(value));
+    content.addEventListener('mouseover', () => {
+        onEdit(new EditHover(value.id));
     }, true);
-    content.addEventListener('mouseout', _e => {
+    content.addEventListener('mouseout', () => {
         onEdit(new EditHover());
     }, true);
 
-    const select: EventListener = _e => {
-        onEdit(new EditSelect(value));
-    };
-    content.addEventListener('click', select, true);
-    content.addEventListener('focus', select, true);
-    content.addEventListener('blur', _e => {
-        onEdit(new EditSelect());
-    }, true);
+    // const select: EventListener = _e => {
+    //     onEdit(new EditSelect(value));
+    // };
+    // content.addEventListener('click', select, true);
+    // content.addEventListener('focus', select, true);
+    // content.addEventListener('blur', _e => {
+    //     onEdit(new EditSelect());
+    // }, true);
 
-    content.addEventListener('keydown', e => {
-        if (e.key === 'Escape') {
-            (e.target as HTMLElement).blur();
-        }
-    }, true);
+    // content.addEventListener('keydown', e => {
+    //     if (e.key === 'Escape') {
+    //         (e.target as HTMLElement).blur();
+    //     }
+    // }, true);
 
-    content.addEventListener('input', e => {
-        const text = (e.target as HTMLElement).textContent;
-        if (text === null) {
-            throw new Error(`cannot edit a text node without text?`);
-        }
-        onEdit(new EditValue(literal.id, text));
-    }, true);
+    // content.addEventListener('input', e => {
+    //     const text = (e.target as HTMLElement).textContent;
+    //     if (text === null) {
+    //         throw new Error(`cannot edit a text node without text?`);
+    //     }
+    //     onEdit(new EditValue(literal.id, text));
+    // }, true);
 
     const el = e('p', ['child', 'value'], content);
     el.id = `editor-${value.id}`;
@@ -195,15 +143,15 @@ function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
     const name = e('h3', ['name'], group.name);
 
     name.addEventListener('mouseover', _e => {
-        onEdit(new EditHover(group));
+        onEdit(new EditHover(group.id));
     }, true);
     name.addEventListener('mouseout', _e => {
         onEdit(new EditHover());
     }, true);
 
-    name.addEventListener('click', _e => {
-        onEdit(new EditSelect(group));
-    }, true);
+    // name.addEventListener('click', _e => {
+    //     onEdit(new EditSelect(group));
+    // }, true);
 
     const el = e('div', ['group'],
         name,
@@ -212,17 +160,6 @@ function renderGroup(group: Group, onEdit: OnEdit): HTMLElement {
 
     el.id = `editor-${group.id}`;
     return el;
-}
-
-
-export function render(el: HTMLElement, state: State, onEdit: OnEdit) {
-    el.innerHTML = '';
-    Object.keys(state.groups)
-        .map((name: string) =>
-            renderGroup(state.groups[name], onEdit))
-        .forEach(childEl =>
-            el.appendChild(childEl));
-    el.appendChild(e('div', ['floating-edit-options', 'off']))
 }
 
 
@@ -260,4 +197,15 @@ export function renderOptions(pane: HTMLElement, node: Node, onEdit: OnEdit) {
         }
         showDomOptions(pane, nameEl as HTMLElement, node, onEdit);
     }
+}
+
+
+export default function render(el: HTMLElement, state: State, onEdit: OnEdit) {
+    el.innerHTML = '';
+    Object.keys(state.ast)
+        .map((name: string) =>
+            renderGroup(state.ast[name], onEdit))
+        .forEach(childEl =>
+            el.appendChild(childEl));
+    el.appendChild(e('div', ['floating-edit-options', 'off']))
 }

@@ -1,20 +1,20 @@
 import {
-  DomNode,
-  Group,
-  GroupMap,
-  GroupNode,
-  Value,
-} from './ast';
-import {
     Edit,
-    EditInit,
-} from './edit';
+} from './state';
+import Ast, {
+    DomNode,
+    Group,
+    GroupNode,
+    Value,
+} from './state/ast';
 import State from './state';
 import expect from './expect';
-import transform from './transform';
+import renderEditor from './editContent';
+import renderPreview from './preview';
+// import transform from './transform';
 
 
-const demoGroups: GroupMap = {
+const demoGroups: Ast = {
     App: Group.e('App',
         new GroupNode('Header'),
         new DomNode('div',
@@ -72,11 +72,16 @@ class StateManager {
     const initialState = State.create(demoGroups);
     const stateManager = new StateManager(initialState);
 
+    function render(state: State) {
+        renderEditor(editor, state, update);
+        renderPreview(preview, state, update);
+    }
+
     function update(edit: Edit) {
-        const nextState = transform(editor, preview, stateManager.get(), edit,
-                                    update);
+        const nextState = stateManager.get().edit(edit);
+        render(nextState);
         stateManager.push(nextState);
     }
 
-    update(new EditInit());
+    render(initialState);
 })();
