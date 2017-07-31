@@ -21,9 +21,10 @@ import expect from './expect';
 import renderPreview from './render';
 
 
-function refresh(state: State, onEdit: OnEdit): State {
-    renderEditor(state.editor, state, onEdit);
-    renderPreview(state.preview, state, onEdit);
+function refresh(editor: HTMLElement, preview: HTMLElement, state: State,
+                 onEdit: OnEdit): State {
+    renderEditor(editor, state, onEdit);
+    renderPreview(preview, state, onEdit);
     return state;
 }
 
@@ -71,18 +72,19 @@ function editRemove(node: Node, state: State): State {
 }
 
 
-function editDeleteDom(state: State, edit: EditDeleteDom, onEdit: OnEdit): State {
+function editDeleteDom(editor: HTMLElement, preview: HTMLElement, state: State,
+                       edit: EditDeleteDom, onEdit: OnEdit): State {
     // unselect first
-    let nextState = editSelect(state, new EditSelect(), onEdit);
+    let nextState = editSelect(editor, preview, state, new EditSelect(), onEdit);
 
     const id = edit.node.id;
     // delete from editor
-    const editorQ = state.editor.querySelector(editorQuery(edit.node));
+    const editorQ = editor.querySelector(editorQuery(edit.node));
     const editorEl = expect(editorQ, `node to remove, ${id}`);
     expect(editorEl.parentNode, `node's parent, ${id}`)
         .removeChild(editorEl);
     // delete from preview
-    const previewEls = state.preview.querySelectorAll(previewQuery(edit.node));
+    const previewEls = preview.querySelectorAll(previewQuery(edit.node));
     Array.prototype.forEach.call(previewEls, (el: HTMLElement) => {
         const parent = expect(el.parentNode, `node's parent, ${id}`);
         parent.removeChild(el);
@@ -94,16 +96,16 @@ function editDeleteDom(state: State, edit: EditDeleteDom, onEdit: OnEdit): State
 }
 
 
-function editHover(state: State, edit: EditHover): State {
+function editHover(preview: HTMLElement, state: State, edit: EditHover): State {
     const id = edit.node === undefined ? undefined : edit.node.id;
     const nextState = state.hover(id);
 
-    const hovered = state.preview.querySelectorAll('.hovering');
+    const hovered = preview.querySelectorAll('.hovering');
     Array.prototype.forEach.call(hovered, (el: HTMLElement) =>
         el.classList.remove('hovering'));
 
     if (edit.node) {
-        const els = state.preview.querySelectorAll(previewQuery(edit.node));
+        const els = preview.querySelectorAll(previewQuery(edit.node));
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('hovering'));
     }
@@ -112,22 +114,23 @@ function editHover(state: State, edit: EditHover): State {
 }
 
 
-function editSelect(state: State, edit: EditSelect, onEdit: OnEdit): State {
+function editSelect(editor: HTMLElement, preview: HTMLElement, state: State,
+                    edit: EditSelect, onEdit: OnEdit): State {
     const id = edit.node === undefined ? undefined : edit.node.id;
     const nextState = state.select(id);
 
-    const selected = state.preview.querySelectorAll('.selecting');
+    const selected = preview.querySelectorAll('.selecting');
     Array.prototype.forEach.call(selected, (el: HTMLElement) =>
         el.classList.remove('selecting'));
 
-    popoff(state.editor);
+    popoff(editor);
 
     if (edit.node) {
-        const els = state.preview.querySelectorAll(previewQuery(edit.node));
+        const els = preview.querySelectorAll(previewQuery(edit.node));
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('selecting'));
 
-        renderOptions(state.editor, edit.node, onEdit);
+        renderOptions(editor, edit.node, onEdit);
     }
 
     return nextState;
@@ -173,16 +176,17 @@ function editValue(state: State, edit: EditValue): State {
 }
 
 
-export default function transform(state: State, edit: Edit, onEdit: OnEdit): State {
+export default function transform(editor: HTMLElement, preview: HTMLElement,
+    state: State, edit: Edit, onEdit: OnEdit): State {
     switch (edit.editType) {
         case 'delete-dom':
-            return editDeleteDom(state, edit, onEdit);
+            return editDeleteDom(editor, preview, state, edit, onEdit);
         case 'init':
-            return refresh(state, onEdit);
+            return refresh(editor, preview, state, onEdit);
         case 'hover':
-            return editHover(state, edit);
+            return editHover(preview, state, edit);
         case 'select':
-            return editSelect(state, edit, onEdit);
+            return editSelect(editor, preview, state, edit, onEdit);
         case 'value':
             return editValue(state, edit);
     }

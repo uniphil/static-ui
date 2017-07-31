@@ -115,24 +115,22 @@ define("state", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var State = (function () {
-        function State(editor, preview, groups, hovered, selected) {
-            this.editor = editor;
-            this.preview = preview;
+        function State(groups, hovered, selected) {
             this.hovered = hovered;
             this.selected = selected;
             this.groups = groups;
         }
-        State.create = function (editor, preview, groups) {
-            return new State(editor, preview, groups);
+        State.create = function (groups) {
+            return new State(groups);
         };
         State.prototype.hover = function (id) {
-            return new State(this.editor, this.preview, this.groups, id, this.selected);
+            return new State(this.groups, id, this.selected);
         };
         State.prototype.select = function (id) {
-            return new State(this.editor, this.preview, this.groups, this.hovered, id);
+            return new State(this.groups, this.hovered, id);
         };
         State.prototype.change = function (groups) {
-            return new State(this.editor, this.preview, groups, this.hovered, this.selected);
+            return new State(groups, this.hovered, this.selected);
         };
         return State;
     }());
@@ -408,9 +406,9 @@ define("render", ["require", "exports"], function (require, exports) {
 define("transform", ["require", "exports", "ast", "edit", "expect", "render"], function (require, exports, ast_1, edit_1, expect_1, render_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    function refresh(state, onEdit) {
-        edit_1.render(state.editor, state, onEdit);
-        render_1.default(state.preview, state, onEdit);
+    function refresh(editor, preview, state, onEdit) {
+        edit_1.render(editor, state, onEdit);
+        render_1.default(preview, state, onEdit);
         return state;
     }
     function editorQuery(node) {
@@ -448,17 +446,17 @@ define("transform", ["require", "exports", "ast", "edit", "expect", "render"], f
             return g;
         }, { App: App }));
     }
-    function editDeleteDom(state, edit, onEdit) {
+    function editDeleteDom(editor, preview, state, edit, onEdit) {
         // unselect first
-        var nextState = editSelect(state, new edit_1.EditSelect(), onEdit);
+        var nextState = editSelect(editor, preview, state, new edit_1.EditSelect(), onEdit);
         var id = edit.node.id;
         // delete from editor
-        var editorQ = state.editor.querySelector(editorQuery(edit.node));
+        var editorQ = editor.querySelector(editorQuery(edit.node));
         var editorEl = expect_1.default(editorQ, "node to remove, " + id);
         expect_1.default(editorEl.parentNode, "node's parent, " + id)
             .removeChild(editorEl);
         // delete from preview
-        var previewEls = state.preview.querySelectorAll(previewQuery(edit.node));
+        var previewEls = preview.querySelectorAll(previewQuery(edit.node));
         Array.prototype.forEach.call(previewEls, function (el) {
             var parent = expect_1.default(el.parentNode, "node's parent, " + id);
             parent.removeChild(el);
@@ -467,35 +465,35 @@ define("transform", ["require", "exports", "ast", "edit", "expect", "render"], f
         nextState = editRemove(edit.node, state);
         return nextState;
     }
-    function editHover(state, edit) {
+    function editHover(preview, state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
         var nextState = state.hover(id);
-        var hovered = state.preview.querySelectorAll('.hovering');
+        var hovered = preview.querySelectorAll('.hovering');
         Array.prototype.forEach.call(hovered, function (el) {
             return el.classList.remove('hovering');
         });
         if (edit.node) {
-            var els = state.preview.querySelectorAll(previewQuery(edit.node));
+            var els = preview.querySelectorAll(previewQuery(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('hovering');
             });
         }
         return nextState;
     }
-    function editSelect(state, edit, onEdit) {
+    function editSelect(editor, preview, state, edit, onEdit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
         var nextState = state.select(id);
-        var selected = state.preview.querySelectorAll('.selecting');
+        var selected = preview.querySelectorAll('.selecting');
         Array.prototype.forEach.call(selected, function (el) {
             return el.classList.remove('selecting');
         });
-        edit_1.popoff(state.editor);
+        edit_1.popoff(editor);
         if (edit.node) {
-            var els = state.preview.querySelectorAll(previewQuery(edit.node));
+            var els = preview.querySelectorAll(previewQuery(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('selecting');
             });
-            edit_1.renderOptions(state.editor, edit.node, onEdit);
+            edit_1.renderOptions(editor, edit.node, onEdit);
         }
         return nextState;
     }
@@ -531,23 +529,23 @@ define("transform", ["require", "exports", "ast", "edit", "expect", "render"], f
         el.textContent = edit.newValue;
         return nextState;
     }
-    function transform(state, edit, onEdit) {
+    function transform(editor, preview, state, edit, onEdit) {
         switch (edit.editType) {
             case 'delete-dom':
-                return editDeleteDom(state, edit, onEdit);
+                return editDeleteDom(editor, preview, state, edit, onEdit);
             case 'init':
-                return refresh(state, onEdit);
+                return refresh(editor, preview, state, onEdit);
             case 'hover':
-                return editHover(state, edit);
+                return editHover(preview, state, edit);
             case 'select':
-                return editSelect(state, edit, onEdit);
+                return editSelect(editor, preview, state, edit, onEdit);
             case 'value':
                 return editValue(state, edit);
         }
     }
     exports.default = transform;
 });
-define("index", ["require", "exports", "ast", "edit", "state", "transform"], function (require, exports, ast_2, edit_2, state_1, transform_1) {
+define("index", ["require", "exports", "ast", "edit", "state", "expect", "transform"], function (require, exports, ast_2, edit_2, state_1, expect_2, transform_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var demoGroups = {
@@ -568,20 +566,14 @@ define("index", ["require", "exports", "ast", "edit", "state", "transform"], fun
         return StateManager;
     }());
     (function () {
-        var editor = document.getElementById('source');
-        if (!editor) {
-            throw new Error('no editor');
-        }
+        var editor = expect_2.default(document.getElementById('source'), 'editor pane');
         editor.innerHTML = '';
-        var preview = document.getElementById('preview');
-        if (!preview) {
-            throw new Error('no preview');
-        }
+        var preview = expect_2.default(document.getElementById('preview'), 'preview pane');
         preview.innerHTML = '';
-        var initialState = state_1.default.create(editor, preview, demoGroups);
+        var initialState = state_1.default.create(demoGroups);
         var stateManager = new StateManager(initialState);
         function update(edit) {
-            var nextState = transform_1.default(stateManager.get(), edit, update);
+            var nextState = transform_1.default(editor, preview, stateManager.get(), edit, update);
             stateManager.push(nextState);
         }
         update(new edit_2.EditInit());

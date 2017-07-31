@@ -10,6 +10,7 @@ import {
     EditInit,
 } from './edit';
 import State from './state';
+import expect from './expect';
 import transform from './transform';
 
 
@@ -62,19 +63,18 @@ class StateManager {
 
 
 (function() {
-    const editor = document.getElementById('source');
-    if (!editor) { throw new Error('no editor'); }
+    const editor = expect(document.getElementById('source'), 'editor pane');
     editor.innerHTML = '';
 
-    const preview = document.getElementById('preview');
-    if (!preview) { throw new Error('no preview'); }
+    const preview = expect(document.getElementById('preview'), 'preview pane');
     preview.innerHTML = '';
 
-    const initialState = State.create(editor, preview, demoGroups);
+    const initialState = State.create(demoGroups);
     const stateManager = new StateManager(initialState);
 
     function update(edit: Edit) {
-        const nextState = transform(stateManager.get(), edit, update);
+        const nextState = transform(editor, preview, stateManager.get(), edit,
+                                    update);
         stateManager.push(nextState);
     }
 
