@@ -96,7 +96,7 @@ function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode) {
             e('button', [],
                 '+ child'),
             e('button', [],
-                '▢ group'),
+                '◱ group'),
         ),
     ].forEach(child => options.appendChild(child));
 }

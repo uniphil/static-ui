@@ -195,7 +195,7 @@ define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
         }
         popup(options, anchor, pane);
         [e_1.default('h5', [], 'DOM Node ', e_1.default('small', [], node.name)),
-            e_1.default('p', [], e_1.default('button', [], '× delete'), e_1.default('button', [], '+ child'), e_1.default('button', [], '▢ group')),
+            e_1.default('p', [], e_1.default('button', [], '× delete'), e_1.default('button', [], '+ child'), e_1.default('button', [], '◱ group')),
         ].forEach(function (child) { return options.appendChild(child); });
     }
     function renderGroupNode(group, onEdit) {
