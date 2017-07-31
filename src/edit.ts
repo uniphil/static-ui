@@ -10,10 +10,21 @@ import e from './e';
 import State from './state';
 
 
-export type Edit = EditInit
+export type Edit = EditDeleteDom
+                 | EditInit
                  | EditHover
                  | EditSelect
                  | EditValue;
+
+
+export class EditDeleteDom {
+    readonly editType = 'delete-dom';
+    readonly node: Node;
+
+    constructor(node: Node) {
+        this.node = node;
+    }
+}
 
 
 export class EditInit {
@@ -79,11 +90,22 @@ function renderDomNode(dom: DomNode, onEdit: OnEdit) {
 }
 
 
-function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode) {
+function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode,
+                        onEdit: OnEdit) {
     const options = pane.querySelector('.floating-edit-options') as HTMLElement;
     if (options === null) {
         throw new Error('missing editor options');
     }
+
+    const del = e('button', [], '× delete');
+    del.addEventListener('click', e => {
+        onEdit(new EditDeleteDom(node));
+        e.stopPropagation();
+    });
+
+    const add = e('button', [], '+ child');
+    const group = e('button', [], '◱ group');
+
     popup(options, anchor, pane);
 
     [   e('h5', [],
@@ -91,12 +113,9 @@ function showDomOptions(pane: HTMLElement, anchor: HTMLElement, node: DomNode) {
             e('small', [],
                 node.name)),
         e('p', [],
-            e('button', [],
-                '× delete'),
-            e('button', [],
-                '+ child'),
-            e('button', [],
-                '◱ group'),
+            del,
+            add,
+            group,
         ),
     ].forEach(child => options.appendChild(child));
 }
@@ -222,7 +241,7 @@ function popup(tag: HTMLElement, target: HTMLElement,
 }
 
 
-function popoff(pane: HTMLElement) {
+export function popoff(pane: HTMLElement) {
     const options = pane.querySelector('.floating-edit-options') as HTMLElement;
     if (options === null) {
         throw new Error('missing editor options');
@@ -232,15 +251,13 @@ function popoff(pane: HTMLElement) {
 }
 
 
-export function renderOptions(pane: HTMLElement, node: Node) {
-    popoff(pane);
-
+export function renderOptions(pane: HTMLElement, node: Node, onEdit: OnEdit) {
     if (node.type === 'dom') {
         const q = `${editorQuery(node)} > .name`;
         const nameEl = pane.querySelector(q);
         if (nameEl === null) {
             throw new Error(`missing element ${q}`);
         }
-        showDomOptions(pane, nameEl as HTMLElement, node);
+        showDomOptions(pane, nameEl as HTMLElement, node, onEdit);
     }
 }

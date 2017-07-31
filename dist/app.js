@@ -141,6 +141,14 @@ define("state", ["require", "exports"], function (require, exports) {
 define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var EditDeleteDom = (function () {
+        function EditDeleteDom(node) {
+            this.editType = 'delete-dom';
+            this.node = node;
+        }
+        return EditDeleteDom;
+    }());
+    exports.EditDeleteDom = EditDeleteDom;
     var EditInit = (function () {
         function EditInit() {
             this.editType = 'init';
@@ -188,14 +196,21 @@ define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
         el.id = "editor-" + dom.id;
         return el;
     }
-    function showDomOptions(pane, anchor, node) {
+    function showDomOptions(pane, anchor, node, onEdit) {
         var options = pane.querySelector('.floating-edit-options');
         if (options === null) {
             throw new Error('missing editor options');
         }
+        var del = e_1.default('button', [], '× delete');
+        del.addEventListener('click', function (e) {
+            onEdit(new EditDeleteDom(node));
+            e.stopPropagation();
+        });
+        var add = e_1.default('button', [], '+ child');
+        var group = e_1.default('button', [], '◱ group');
         popup(options, anchor, pane);
         [e_1.default('h5', [], 'DOM Node ', e_1.default('small', [], node.name)),
-            e_1.default('p', [], e_1.default('button', [], '× delete'), e_1.default('button', [], '+ child'), e_1.default('button', [], '◱ group')),
+            e_1.default('p', [], del, add, group),
         ].forEach(function (child) { return options.appendChild(child); });
     }
     function renderGroupNode(group, onEdit) {
@@ -299,18 +314,29 @@ define("edit", ["require", "exports", "e"], function (require, exports, e_1) {
         options.innerHTML = '';
         options.classList.add('off');
     }
-    function renderOptions(pane, node) {
-        popoff(pane);
+    exports.popoff = popoff;
+    function renderOptions(pane, node, onEdit) {
         if (node.type === 'dom') {
             var q = editorQuery(node) + " > .name";
             var nameEl = pane.querySelector(q);
             if (nameEl === null) {
                 throw new Error("missing element " + q);
             }
-            showDomOptions(pane, nameEl, node);
+            showDomOptions(pane, nameEl, node, onEdit);
         }
     }
     exports.renderOptions = renderOptions;
+});
+define("expect", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function expect(el, msg) {
+        if (el === null) {
+            throw new Error("Element was null: " + msg);
+        }
+        return el;
+    }
+    exports.default = expect;
 });
 define("render", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -379,13 +405,16 @@ define("render", ["require", "exports"], function (require, exports) {
     }
     exports.default = render;
 });
-define("transform", ["require", "exports", "ast", "edit", "render"], function (require, exports, ast_1, edit_1, render_1) {
+define("transform", ["require", "exports", "ast", "edit", "expect", "render"], function (require, exports, ast_1, edit_1, expect_1, render_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function refresh(state, onEdit) {
         edit_1.render(state.editor, state, onEdit);
         render_1.default(state.preview, state, onEdit);
         return state;
+    }
+    function editorQuery(node) {
+        return "#editor-" + node.id;
     }
     function previewQuery(node) {
         switch (node.type) {
@@ -394,6 +423,49 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
             case 'dom': return "#preview-" + node.id;
             case 'value': return "#preview-" + node.value.id;
         }
+    }
+    function editRemove(node, state) {
+        var id = node.id;
+        var App = state.groups.App;
+        function filter(children) {
+            return children
+                .filter(function (child) { return child.id !== id; })
+                .map(function (child) {
+                switch (child.type) {
+                    case 'group':
+                        return new (ast_1.GroupNode.bind.apply(ast_1.GroupNode, [void 0, child.name].concat(filter(child.children))))();
+                    case 'dom':
+                        return new (ast_1.DomNode.bind.apply(ast_1.DomNode, [void 0, child.name].concat(filter(child.children))))();
+                    case 'value':
+                        return child;
+                }
+            });
+        }
+        return state.change(Object.keys(state.groups).reduce(function (g, k) {
+            var group = state.groups[k];
+            var children = filter(group.children);
+            g[k] = group.replaceChildren(children);
+            return g;
+        }, { App: App }));
+    }
+    function editDeleteDom(state, edit, onEdit) {
+        // unselect first
+        var nextState = editSelect(state, new edit_1.EditSelect(), onEdit);
+        var id = edit.node.id;
+        // delete from editor
+        var editorQ = state.editor.querySelector(editorQuery(edit.node));
+        var editorEl = expect_1.default(editorQ, "node to remove, " + id);
+        expect_1.default(editorEl.parentNode, "node's parent, " + id)
+            .removeChild(editorEl);
+        // delete from preview
+        var previewEls = state.preview.querySelectorAll(previewQuery(edit.node));
+        Array.prototype.forEach.call(previewEls, function (el) {
+            var parent = expect_1.default(el.parentNode, "node's parent, " + id);
+            parent.removeChild(el);
+        });
+        // delete from ast
+        nextState = editRemove(edit.node, state);
+        return nextState;
     }
     function editHover(state, edit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
@@ -410,19 +482,20 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
         }
         return nextState;
     }
-    function editSelect(state, edit) {
+    function editSelect(state, edit, onEdit) {
         var id = edit.node === undefined ? undefined : edit.node.id;
         var nextState = state.select(id);
         var selected = state.preview.querySelectorAll('.selecting');
         Array.prototype.forEach.call(selected, function (el) {
             return el.classList.remove('selecting');
         });
+        edit_1.popoff(state.editor);
         if (edit.node) {
             var els = state.preview.querySelectorAll(previewQuery(edit.node));
             Array.prototype.forEach.call(els, function (el) {
                 return el.classList.add('selecting');
             });
-            edit_1.renderOptions(state.editor, edit.node);
+            edit_1.renderOptions(state.editor, edit.node, onEdit);
         }
         return nextState;
     }
@@ -460,10 +533,16 @@ define("transform", ["require", "exports", "ast", "edit", "render"], function (r
     }
     function transform(state, edit, onEdit) {
         switch (edit.editType) {
-            case 'init': return refresh(state, onEdit);
-            case 'hover': return editHover(state, edit);
-            case 'select': return editSelect(state, edit);
-            case 'value': return editValue(state, edit);
+            case 'delete-dom':
+                return editDeleteDom(state, edit, onEdit);
+            case 'init':
+                return refresh(state, onEdit);
+            case 'hover':
+                return editHover(state, edit);
+            case 'select':
+                return editSelect(state, edit, onEdit);
+            case 'value':
+                return editValue(state, edit);
         }
     }
     exports.default = transform;

@@ -7,15 +7,17 @@ import {
     UiNode,
 } from './ast';
 import {
-    render as renderEditor,
-    renderOptions,
     Edit,
+    EditDeleteDom,
     EditHover,
     EditSelect,
     EditValue,
     OnEdit,
+    popoff,
+    render as renderEditor,
+    renderOptions,
 } from './edit';
-import e from './e';
+import expect from './expect';
 import renderPreview from './render';
 
 
@@ -26,6 +28,11 @@ function refresh(state: State, onEdit: OnEdit): State {
 }
 
 
+function editorQuery(node: Node) {
+    return `#editor-${node.id}`;
+}
+
+
 function previewQuery(node: Node) {
     switch (node.type) {
         case 'group-definition': return `[data-${node.id}]`;
@@ -33,6 +40,57 @@ function previewQuery(node: Node) {
         case 'dom':   return `#preview-${node.id}`;
         case 'value': return `#preview-${node.value.id}`;
     }
+}
+
+
+function editRemove(node: Node, state: State): State {
+    const { id } = node;
+    const { App } = state.groups;
+
+    function filter(children: UiNode[]): UiNode[] {
+        return children
+            .filter(child => child.id !== id)
+            .map(child => {
+                switch (child.type) {
+                    case 'group':
+                        return new GroupNode(child.name, ...filter(child.children));
+                    case 'dom':
+                        return new DomNode(child.name, ...filter(child.children));
+                    case 'value':
+                        return child;
+                }
+            });
+    }
+
+    return state.change(Object.keys(state.groups).reduce((g: GroupMap, k) => {
+        const group = state.groups[k];
+        const children = filter(group.children);
+        g[k] = group.replaceChildren(children);
+        return g;
+    }, { App }))
+}
+
+
+function editDeleteDom(state: State, edit: EditDeleteDom, onEdit: OnEdit): State {
+    // unselect first
+    let nextState = editSelect(state, new EditSelect(), onEdit);
+
+    const id = edit.node.id;
+    // delete from editor
+    const editorQ = state.editor.querySelector(editorQuery(edit.node));
+    const editorEl = expect(editorQ, `node to remove, ${id}`);
+    expect(editorEl.parentNode, `node's parent, ${id}`)
+        .removeChild(editorEl);
+    // delete from preview
+    const previewEls = state.preview.querySelectorAll(previewQuery(edit.node));
+    Array.prototype.forEach.call(previewEls, (el: HTMLElement) => {
+        const parent = expect(el.parentNode, `node's parent, ${id}`);
+        parent.removeChild(el);
+    });
+    // delete from ast
+    nextState = editRemove(edit.node, state);
+
+    return nextState;
 }
 
 
@@ -54,7 +112,7 @@ function editHover(state: State, edit: EditHover): State {
 }
 
 
-function editSelect(state: State, edit: EditSelect): State {
+function editSelect(state: State, edit: EditSelect, onEdit: OnEdit): State {
     const id = edit.node === undefined ? undefined : edit.node.id;
     const nextState = state.select(id);
 
@@ -62,12 +120,14 @@ function editSelect(state: State, edit: EditSelect): State {
     Array.prototype.forEach.call(selected, (el: HTMLElement) =>
         el.classList.remove('selecting'));
 
+    popoff(state.editor);
+
     if (edit.node) {
         const els = state.preview.querySelectorAll(previewQuery(edit.node));
         Array.prototype.forEach.call(els, (el: HTMLElement) =>
             el.classList.add('selecting'));
 
-        renderOptions(state.editor, edit.node);
+        renderOptions(state.editor, edit.node, onEdit);
     }
 
     return nextState;
@@ -115,9 +175,15 @@ function editValue(state: State, edit: EditValue): State {
 
 export default function transform(state: State, edit: Edit, onEdit: OnEdit): State {
     switch (edit.editType) {
-        case 'init':   return refresh(state, onEdit);
-        case 'hover':  return editHover(state, edit);
-        case 'select': return editSelect(state, edit);
-        case 'value':  return editValue(state, edit);
+        case 'delete-dom':
+            return editDeleteDom(state, edit, onEdit);
+        case 'init':
+            return refresh(state, onEdit);
+        case 'hover':
+            return editHover(state, edit);
+        case 'select':
+            return editSelect(state, edit, onEdit);
+        case 'value':
+            return editValue(state, edit);
     }
 }
